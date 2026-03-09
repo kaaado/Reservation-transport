@@ -8,3 +8,5 @@ process.md
 # Ignore compiled files/dependencies (if any later)
 /vendor/
 /node_modules/
+
+cache/

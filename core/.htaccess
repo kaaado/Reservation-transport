@@ -1,0 +1,7 @@
+# Block direct browser access to the Core Engine
+Order Deny,Allow
+Deny from all
+
+<FilesMatch "^.*$">
+    Deny from all
+</FilesMatch>

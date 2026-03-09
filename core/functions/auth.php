@@ -1,0 +1,103 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+/**
+ * Register a new user
+ */
+function registerUser($name, $email, $password, $phone, $role, $pdo) {
+    // 1. Check Uniqueness First
+    $check = $pdo->prepare("SELECT email, phone FROM users WHERE email = ? OR phone = ?");
+    $check->execute([$email, $phone]);
+    $existing = $check->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($existing as $row) {
+        if ($row['email'] === $email) return "L'email est déjà utilisé.";
+        if ($row['phone'] === $phone) return "Ce numéro de téléphone est déjà pris.";
+    }
+
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+
+    $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, phone, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'active', NOW(), NOW())");
+    
+    try {
+        $stmt->execute([$name, $email, $hash, $phone, $role]);
+        return $pdo->lastInsertId();
+    } catch (PDOException $e) {
+        return "Erreur BDD : " . $e->getMessage();
+    }
+}
+
+/**
+ * Log in an existing user with optional session persistence
+ */
+function loginUser($email, $password, $pdo, $remember = false) {
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        return "Utilisateur non trouvé";
+    }
+
+    if (!password_verify($password, $user['password_hash'])) {
+        return "Mot de passe incorrect";
+    }
+
+    if ($user['status'] === 'suspended') {
+        return "Votre compte est suspendu";
+    }
+
+    // Session Hardening
+    session_regenerate_id(true);
+    
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['role'] = $user['role'];
+    $_SESSION['name'] = $user['name'];
+    $_SESSION['last_login'] = $user['last_login'] ?? date('Y-m-d H:i:s');
+
+    // Record last login
+    $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+    $updateStmt->execute([$user['id']]);
+
+    // Remember Me Implementation
+    if ($remember) {
+        $token = bin2hex(random_bytes(32));
+        $updateToken = $pdo->prepare("UPDATE users SET remember_token = ? WHERE id = ?");
+        $updateToken->execute([$token, $user['id']]);
+        
+        // Store user ID and token in a cookie (valid for 30 days)
+        $cookieData = $user['id'] . ":" . $token;
+        setcookie('remember_me', $cookieData, time() + (86400 * 30), "/", "", false, true);
+    }
+
+    return true;
+}
+
+/**
+ * Check if a persistent session (Remember Me) exists
+ */
+function checkRememberMe($pdo) {
+    if (isset($_COOKIE['remember_me']) && !isset($_SESSION['user_id'])) {
+        $parts = explode(":", $_COOKIE['remember_me']);
+        if (count($parts) === 2) {
+            $user_id = $parts[0];
+            $token = $parts[1];
+            
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND remember_token = ? AND status = 'active'");
+            $stmt->execute([$user_id, $token]);
+            $user = $stmt->fetch();
+            
+            if ($user) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['name'] = $user['name'];
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
