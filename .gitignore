@@ -1,0 +1,10 @@
+# Ignore internal dev documentation
+process.md
+
+# Ignore IDE files
+/.vscode/
+/.idea/
+
+# Ignore compiled files/dependencies (if any later)
+/vendor/
+/node_modules/
