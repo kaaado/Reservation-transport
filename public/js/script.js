@@ -10,10 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.type = 'text';
                 this.classList.remove('fa-eye');
                 this.classList.add('fa-eye-slash');
+                this.style.color = '#ff8c00'; 
             } else {
                 input.type = 'password';
                 this.classList.remove('fa-eye-slash');
                 this.classList.add('fa-eye');
+                this.style.color = ''; 
             }
         });
     });

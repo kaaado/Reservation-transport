@@ -253,26 +253,4 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Password Eye Toggle Handler globally
-    document.addEventListener('click', (e) => {
-        const toggleBtn = e.target.closest('.password-toggle');
-        if (toggleBtn) {
-            const parent = toggleBtn.parentElement;
-            const input = parent.querySelector('input');
-            if (input) {
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    toggleBtn.classList.remove('fa-eye');
-                    toggleBtn.classList.add('fa-eye-slash');
-                    toggleBtn.style.color = '#ff8c00'; 
-                } else {
-                    input.type = 'password'; 
-                    toggleBtn.classList.remove('fa-eye-slash');
-                    toggleBtn.classList.add('fa-eye');
-                    toggleBtn.style.color = ''; 
-                }
-            }
-        }
-    });
-
 });

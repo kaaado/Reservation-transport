@@ -10,3 +10,5 @@ process.md
 /node_modules/
 
 cache/
+
+.env
