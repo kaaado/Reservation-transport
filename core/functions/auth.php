@@ -13,8 +13,7 @@ function registerUser($name, $email, $password, $phone, $role, $pdo) {
     $existing = $check->fetchAll(PDO::FETCH_ASSOC);
     
     foreach ($existing as $row) {
-        if ($row['email'] === $email) return "L'email est déjà utilisé.";
-        if ($row['phone'] === $phone) return "Ce numéro de téléphone est déjà pris.";
+        if ($row['email'] === $email || $row['phone'] === $phone) return "Un compte avec cet e-mail ou ce numéro de téléphone existe déjà.";
     }
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
@@ -39,11 +38,11 @@ function loginUser($email, $password, $pdo, $remember = false) {
     $user = $stmt->fetch();
 
     if (!$user) {
-        return "Utilisateur non trouvé";
+        return "Identifiants invalides. L'adresse e-mail ou le mot de passe est incorrect.";
     }
 
     if (!password_verify($password, $user['password_hash'])) {
-        return "Mot de passe incorrect";
+        return "Identifiants invalides. L'adresse e-mail ou le mot de passe est incorrect.";
     }
 
     if ($user['status'] === 'suspended') {
