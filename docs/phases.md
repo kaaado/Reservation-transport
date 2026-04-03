@@ -103,7 +103,6 @@ Deliverables:
 - UI/UX improvements for professional look and feel.
 - Alerts, notifications, and status badges.
 - Clean codebase and documentation.
-- Screenshots and report-ready artifacts.
 
 Why this phase matters:
 - Turns a working system into a presentable PFE product.

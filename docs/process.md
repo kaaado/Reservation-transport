@@ -19,9 +19,9 @@ Your project is built in delivery phases. The main functional phases are 1 throu
 - Phase 9 — PFE Report
 - Phase 10 — Soutenance Preparation
 
-## Current Phase: Phase 3 — Client Module
+## Current Phase: Phase 4 — Transporter Module
 
-This is the active phase. The current work focuses on client-side features: request transport form submission, saving reservations to the database, showing reservation status, and building the client dashboard.
+This is the active phase. The current work focuses on transporter-side features: vehicle management (CRUD), responding to client transport requests (accept/reject), handling the lifecycle of active jobs, and tracking revenue/earnings per completed transport mission.
 
 ---
 
@@ -349,3 +349,71 @@ The current system architecture provides:
 * maintainable codebase
 
 This foundation prepares the project for **Phase 3 — Client Reservation Module Implementation**.
+
+---
+
+# Phase 4 — Transporter Module
+
+### Implemented Features
+
+- Vehicle management (CRUD)
+- Request handling (accept/reject)
+- Job lifecycle management
+- Earnings tracking system
+- Transporter dashboard with statistics
+
+### UI/UX Improvements
+
+- Sidebar navigation added specific to the Transporter role (`includes/sidebar_transporter.php`)
+- Topbar maintained with user info and notification placeholders (`includes/topbar.php`)
+- Toast notifications implemented globally for success/error alerts (`includes/toast.php`)
+- Responsive and modern dashboard design with glassmorphism components
+- Custom vehicle forms and empty states
+
+### Security Enhancements
+
+- RBAC enforced for transporter pages via `enforceRole('transporter')`
+- CSRF protection added to all POST update/delete forms
+- XSS protection applied via `htmlspecialchars()` on outputs
+- Ownership validation for resources (ensuring transporter can only modify their own vehicles/jobs)
+- Prepared PDO Statements protecting the database interactions
+
+### QA Fixes
+
+- Fixed request handling bugs by validating correct statuses before accepting tasks
+- Improved job status transitions ensuring earnings aren't double-counted
+- Optimized database queries separating `functions/job.php` and `functions/earning.php`
+
+### Status
+
+✅ Transporter module fully functional and production-ready
+
+---
+
+## Phase 5 — Reservation Lifecycle & Workflow Orchestration (Hardened)
+
+### 🏗️ Modular Architecture Refactor
+- **Sub-module implementation**: Refactored `functions/reservation.php` into a dedicated structured directory:
+  - `functions/reservation/constants.php`: Class-based status management (`ReservationStatus::PENDING`, etc.).
+  - `functions/reservation/validation.php`: Centralized transition rules and strict ownership checks.
+  - `functions/reservation/queries.php`: Optimized READ operations with expiration filtering (24h stale request exclusion).
+  - `functions/reservation/lifecycle.php`: Atomicity engine for all WRITE operations.
+
+### 🛡️ Security & Concurrency Hardening
+- **Race Condition Prevention**: Implemented row-level locking using `SELECT ... FOR UPDATE` inside all critical status transition blocks.
+- **Transactional Integrity**: Every lifecycle change (Accept, Complete, Cancel) is wrapped in a PDO transaction to ensure consistent state and audit trails.
+- **Idempotency Guard**: Added checks to prevent duplicate state triggers (e.g., clicking "Complete" twice).
+- **Ownership Verification**: Enforced strict `WHERE client_id = ?` or `WHERE vehicle_id IN (SELECT id FROM vehicles WHERE owner_id = ?)` conditions on all mutations.
+- **CSRF Enforcement**: Standardized token validation across all mission-critical forms (Cancellation, Accept, Reject, Status Updates).
+
+### 🔄 Workflow Enhancements
+- **Client Cancellation Flow**: Implemented `cancelReservation()` allow clients to abort pending requests before transporter engagement.
+- **Detailed Audit Trail**: Synchronized the `reservation_logs` table with every transition, capturing the previous state, new state, author, and precise micro-timestamp.
+- **Timeline UI (v2.0)**: Enhanced the client view with a historical event tracker showing who changed the status and exactly when, using data from the audit logs.
+
+### 📈 Performance Optimization
+- **Database Indexing**: Added a composite index `idx_logs_reservation_date (reservation_id, created_at)` to the audit table for sub-millisecond retrieval.
+- **Log Pagination**: Implemented LIMIT/OFFSET pagination on the admin audit dashboard to handle high-frequency event streams.
+
+### Status
+✅ Phase 5 fully hardened, audited, and production-ready.

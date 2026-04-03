@@ -79,7 +79,7 @@ if (!function_exists('getStatusLabel')) {
         </div>
 
         <?php 
-        $table_headers = ['ID', 'Date demandée', 'Itinéraire', 'Marchandise', 'Transporteur', 'Statut', 'Action'];
+        $table_headers = ['ID', 'Date demandée', 'Itinéraire', 'Marchandise', 'Transporteur', 'Prix', 'Statut', 'Action'];
         $table_data = [];
         $i = 1;
         foreach($reservations as $res) {
@@ -90,6 +90,8 @@ if (!function_exists('getStatusLabel')) {
 
             $transporter = $res['transporter_name'] ? htmlspecialchars($res['transporter_name']) : "<span style='color: #94a3b8; font-style: italic;'>Non assigné</span>";
             
+            $priceBadge = ($res['price'] > 0) ? "<strong>" . number_format($res['price'], 2) . " DA</strong>" : "<span style='color: #94a3b8; font-style: italic;'>À négocier</span>";
+
             $statusClass = getStatusBadgeClass($res['status']);
             $statusLabel = getStatusLabel($res['status']);
             $statusBadge = "<span class='status-badge $statusClass'>$statusLabel</span>";
@@ -102,6 +104,7 @@ if (!function_exists('getStatusLabel')) {
                 $itineraire,
                 htmlspecialchars($res['cargo_type']),
                 $transporter,
+                $priceBadge,
                 $statusBadge,
                 $actionBtn
             ];

@@ -27,13 +27,15 @@ $dashPath = getRoleDashboardPath($role);
         <?php endif; ?>
         
         <?php if ($role === 'transporter' || $role === 'admin'): ?>
-            <li><a href="<?php echo URL_ROOT; ?>transporter/requests.php" <?php echo ($current_page == 'requests.php') ? 'class="active"' : ''; ?>><i class="fas fa-list-ul"></i> Demandes Disponibles</a></li>
-            <li><a href="<?php echo URL_ROOT; ?>transporter/my_missions.php" <?php echo ($current_page == 'my_missions.php') ? 'class="active"' : ''; ?>><i class="fas fa-route"></i> Mes Missions</a></li>
-            <li><a href="<?php echo URL_ROOT; ?>transporter/vehicles.php" <?php echo ($current_page == 'vehicles.php') ? 'class="active"' : ''; ?>><i class="fas fa-truck"></i> Mes Véhicules</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>transporter/requests.php" <?php echo ($current_page == 'requests.php') ? 'class="active"' : ''; ?>><i class="fas fa-list-ul"></i> Demandes en attente</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>transporter/jobs.php" <?php echo ($current_page == 'jobs.php') ? 'class="active"' : ''; ?>><i class="fas fa-route"></i> Mes Missions</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>transporter/vehicles.php" <?php echo ($current_page == 'vehicles.php' || $current_page == 'vehicle_form.php') ? 'class="active"' : ''; ?>><i class="fas fa-truck"></i> Mes Véhicules</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>transporter/earnings.php" <?php echo ($current_page == 'earnings.php') ? 'class="active"' : ''; ?>><i class="fas fa-wallet"></i> Mes Revenus</a></li>
         <?php endif; ?>
         
         <?php if ($role === 'admin'): ?>
             <li><a href="<?php echo URL_ROOT; ?>admin/users.php" <?php echo ($current_page == 'users.php') ? 'class="active"' : ''; ?>><i class="fas fa-users"></i> Utilisateurs</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>admin/reservation_logs.php" <?php echo ($current_page == 'reservation_logs.php') ? 'class="active"' : ''; ?>><i class="fas fa-history"></i> Journaux d'Audit</a></li>
             <li><a href="<?php echo URL_ROOT; ?>admin/reports.php" <?php echo ($current_page == 'reports.php') ? 'class="active"' : ''; ?>><i class="fas fa-chart-bar"></i> Rapports</a></li>
         <?php endif; ?>
         

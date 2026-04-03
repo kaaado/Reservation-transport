@@ -11,7 +11,7 @@ define('URL_ROOT', $protocol . $domainName . '/Reservation-transport/');
 
 // 3. Easy Access Constants
 define('INC_PATH', ROOT_PATH . 'includes' . DIRECTORY_SEPARATOR);
-define('FUNC_PATH', ROOT_PATH . 'core' . DIRECTORY_SEPARATOR . 'functions' . DIRECTORY_SEPARATOR);
+define('FUNC_PATH', ROOT_PATH . 'functions' . DIRECTORY_SEPARATOR);
 define('CONF_PATH', ROOT_PATH . 'core' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR);
 define('CSS_URL', URL_ROOT . 'public/css/');
 define('JS_URL', URL_ROOT . 'public/js/');
