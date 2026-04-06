@@ -23,18 +23,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pickup = trim($_POST['pickup']);
     $destination = trim($_POST['destination']);
     $cargoType = trim($_POST['cargo_type']);
-    $weight = trim($_POST['weight']);
-    $volume = trim($_POST['volume']);
+    $weight = trim($_POST['weight']) === '' ? null : trim($_POST['weight']);
+    $volume = trim($_POST['volume']) === '' ? null : trim($_POST['volume']);
     $date = trim($_POST['reservation_date']);
+    $priceType = isset($_POST['price_type']) && $_POST['price_type'] === 'fixed' ? 'fixed' : 'negotiable';
+    $price = null;
+    if ($priceType === 'fixed' && !empty($_POST['price']) && is_numeric($_POST['price'])) {
+        $price = (float)$_POST['price'];
+    }
     
     if (empty($pickup) || empty($destination) || empty($date)) {
         $error = "Veuillez remplir tous les champs obligatoires.";
+    } else if ($priceType === 'fixed' && ($price === null || $price <= 0)) {
+        $error = "Le prix doit être supérieur à 0 pour un prix fixe.";
     } else {
-        $result = createReservation($_SESSION['user_id'], $pickup, $destination, $cargoType, $weight, $volume, $date, $pdo);
-        if ($result) {
+        $result = createReservation($_SESSION['user_id'], $pickup, $destination, $cargoType, $weight, $volume, $date, $price, $priceType, $pdo);
+        if ($result === true) {
             $success = "Votre demande de transport a été enregistrée avec succès. Un transporteur vous sera assigné prochainement.";
         } else {
-            $error = "Une erreur s'est produite lors de l'enregistrement de votre demande.";
+            $error = "Une erreur s'est produite lors de l'enregistrement de votre demande : " . $result;
         }
     }
 }
@@ -141,6 +148,22 @@ $dashPath = getRoleDashboardPath($_SESSION['role']);
                     </div>
                 </div>
 
+                <h3 style="margin-bottom: 20px; margin-top: 10px; font-size: 18px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">Tarification</h3>
+
+                <div class="form-row">
+                    <div class="form-group-dash">
+                        <label>Type de prix *</label>
+                        <select name="price_type" id="price_type" required>
+                            <option value="fixed">Prix fixe</option>
+                            <option value="negotiable">Prix à négocier</option>
+                        </select>
+                    </div>
+                    <div class="form-group-dash" id="price_container">
+                        <label>Votre prix proposé (DA)</label>
+                        <input type="number" step="0.01" name="price" id="price_input" placeholder="Ex: 5000">
+                    </div>
+                </div>
+
                 <div style="margin-top: 30px; display: flex; justify-content: flex-end;">
                     <button type="submit" class="btn-primary" style="width: auto; padding: 12px 30px; font-size: 16px;">
                         Soumettre la demande <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
@@ -154,5 +177,14 @@ $dashPath = getRoleDashboardPath($_SESSION['role']);
 </div>
 
 <script src="<?php echo JS_URL; ?>dashboard.js"></script>
+<script>
+    document.getElementById('price_type').addEventListener('change', function() {
+        if (this.value === 'negotiable') {
+            document.getElementById('price_container').style.display = 'none';
+        } else {
+            document.getElementById('price_container').style.display = 'block';
+        }
+    });
+</script>
 </body>
 </html>

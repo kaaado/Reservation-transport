@@ -39,6 +39,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+// Handle Negotiation Acceptance
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'accept_negotiation') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("CSRF invalid");
+    }
+    $result = clientAcceptNegotiation($reservation_id, $_SESSION['user_id'], $pdo);
+    if ($result === true) {
+        $_SESSION['success'] = "Le prix proposé a été accepté. La réservation est maintenant confirmée.";
+        header("Location: reservation_details.php?id=" . $reservation_id);
+        exit;
+    } else {
+        $error = $result;
+    }
+}
+
 $timeline = getReservationTimeline($reservation_id, $pdo);
 
 if (!function_exists('getRoleDashboardPath')) {
@@ -54,6 +69,7 @@ $dashPath = getRoleDashboardPath($_SESSION['role']);
 function getStatusBadgeClass($status) {
     switch($status) {
         case 'pending': return 'status-pending';
+        case 'negotiation': return 'status-pending';
         case 'accepted': return 'status-accepted';
         case 'in_progress': return 'status-in_progress';
         case 'completed': return 'status-completed';
@@ -65,6 +81,7 @@ function getStatusBadgeClass($status) {
 function getStatusLabel($status) {
     switch($status) {
         case 'pending': return 'En attente';
+        case 'negotiation': return 'En négociation';
         case 'accepted': return 'Accepté';
         case 'in_progress': return 'En cours';
         case 'completed': return 'Terminé';
@@ -89,11 +106,9 @@ function getStatusLabel($status) {
             backdrop-filter: blur(12px);
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 40px 30px;
+            padding: 40px 30px 90px 30px;
             margin-bottom: 30px;
             width: 100%;
-            height: 250px;
-
         }
         .timeline {
             display: flex;
@@ -189,9 +204,10 @@ function getStatusLabel($status) {
         </div>
 
         <?php
-        $statuses = ['pending', 'accepted', 'in_progress', 'completed'];
+        $statuses = ['pending', 'negotiation', 'accepted', 'in_progress', 'completed'];
         $statusLabels = [
             'pending' => ['icon' => 'fa-clipboard-list', 'label' => 'Reçue'],
+            'negotiation' => ['icon' => 'fa-handshake', 'label' => 'Négociation'],
             'accepted' => ['icon' => 'fa-check-double', 'label' => 'Acceptée'],
             'in_progress' => ['icon' => 'fa-truck-fast', 'label' => 'En cours'],
             'completed' => ['icon' => 'fa-box-check', 'label' => 'Livrée']
@@ -256,19 +272,50 @@ function getStatusLabel($status) {
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-            
-            <?php if ($res['status'] === ReservationStatus::PENDING): ?>
-            <div style="margin-top: 100px; text-align: center;">
-                <form method="POST" action="" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette demande ?');">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
-                    <input type="hidden" name="action" value="cancel">
-                    <button type="submit" class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); width: auto; padding: 10px 25px;">
-                        <i class="fas fa-ban"></i> Annuler ma demande
-                    </button>
-                </form>
-            </div>
-            <?php endif; ?>
         </div>
+
+        <?php if ($res['status'] === 'pending' || $res['status'] === 'negotiation'): ?>
+        <div style="margin-bottom: 30px; display: flex; justify-content: center;">
+            
+            <?php if ($res['status'] === 'negotiation'): ?>
+            <div style="flex: 1; max-width: 540px; background: rgba(30, 41, 59, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 16px; padding: 28px 32px; text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 14px;">
+                    <i class="fas fa-handshake" style="color: #fbbf24; font-size: 22px;"></i>
+                    <span style="color: #fbbf24; font-weight: 700; font-size: 16px;">Proposition du Transporteur</span>
+                </div>
+                <div style="color: #fff; font-size: 32px; font-weight: 800; margin: 10px 0;">
+                    <?php echo number_format($res['transporter_proposed_price'], 2); ?> <span style="font-size: 16px; color: #94a3b8; font-weight: 500;">DA</span>
+                </div>
+                <p style="color: #94a3b8; font-size: 13px; margin-bottom: 20px;">Le transporteur a proposé ce prix pour votre demande.</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <form method="POST" action="">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="action" value="accept_negotiation">
+                        <button type="submit" class="btn-primary" style="width: auto; padding: 10px 24px; font-size: 14px; border-radius: 8px;">
+                            <i class="fas fa-check"></i> Accepter le prix
+                        </button>
+                    </form>
+                    <form method="POST" action="" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette demande ?');">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                        <input type="hidden" name="action" value="cancel">
+                        <button type="submit" class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); width: auto; padding: 10px 24px; font-size: 14px; border-radius: 8px;">
+                            <i class="fas fa-ban"></i> Annuler
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <?php else: ?>
+            <form method="POST" action="" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette demande ?');">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                <input type="hidden" name="action" value="cancel">
+                <button type="submit" class="btn btn-outline" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3); width: auto; padding: 10px 25px;">
+                    <i class="fas fa-ban"></i> Annuler ma demande
+                </button>
+            </form>
+            <?php endif; ?>
+            
+        </div>
+        <?php endif; ?>
 
         <div class="details-grid">
             
@@ -334,7 +381,19 @@ function getStatusLabel($status) {
                     
                     <div class="detail-row">
                         <span class="label">Prix Cible Transporteur</span>
-                        <span class="value"><?php echo ($res['price'] > 0) ? number_format($res['price'], 2) . ' DA' : '<span style="color:#64748b;font-style:italic;">En attente de devis</span>'; ?></span>
+                        <span class="value">
+                            <?php 
+                            if ($res['price'] > 0) {
+                                echo number_format($res['price'], 2) . ' DA';
+                            } else if ($res['status'] === 'negotiation') {
+                                echo number_format($res['transporter_proposed_price'], 2) . ' DA <span style="font-size:12px;color:#f59e0b;">(À accepter)</span>';
+                            } else if ($res['price_type'] === 'negotiable') {
+                                echo '<span style="color:#64748b;font-style:italic;">Prix à négocier</span>';
+                            } else {
+                                echo '<span style="color:#64748b;font-style:italic;">En attente de devis</span>';
+                            }
+                            ?>
+                        </span>
                     </div>
                 </div>
 

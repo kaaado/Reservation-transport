@@ -49,7 +49,9 @@ CREATE TABLE IF NOT EXISTS reservations (
     weight DECIMAL(8,2) COMMENT 'Weight in kg',
     reservation_date DATETIME NOT NULL,
     price DECIMAL(10,2) NULL,
-    status ENUM('pending', 'accepted', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+    price_type ENUM('fixed', 'negotiable') DEFAULT 'fixed',
+    transporter_proposed_price DECIMAL(10,2) NULL,
+    status ENUM('pending', 'negotiation', 'accepted', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE SET NULL,
@@ -81,6 +83,19 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_notifications_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- RESERVATION_LOGS Table (Audit trail for status changes)
+CREATE TABLE IF NOT EXISTS reservation_logs (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    reservation_id INT UNSIGNED NOT NULL,
+    old_status VARCHAR(30) NULL,
+    new_status VARCHAR(30) NOT NULL,
+    changed_by INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE,
+    FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_log_reservation (reservation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- SEED DATA

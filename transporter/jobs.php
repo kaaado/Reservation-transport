@@ -64,6 +64,7 @@ $jobs = getJobsByTransporter($transporter_id, $pdo);
             border-radius: 4px;
         }
         .status-accepted { background: #3b82f6; } /* Blue */
+        .status-negotiation { background: #f59e0b; } /* Amber */
         .status-in_progress { background: #f59e0b; } /* Orange */
         .status-completed { background: #10b981; } /* Green */
         .status-cancelled { background: #ef4444; } /* Red */
@@ -115,6 +116,17 @@ $jobs = getJobsByTransporter($transporter_id, $pdo);
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        .negotiation-badge {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 10px;
+            padding: 12px 15px;
+            text-align: center;
+        }
+        .negotiation-badge i { color: #f59e0b; margin-bottom: 5px; }
+        .negotiation-badge .neg-title { color: #fbbf24; font-weight: 600; font-size: 13px; }
+        .negotiation-badge .neg-price { color: #fff; font-weight: 700; font-size: 16px; margin: 6px 0; }
+        .negotiation-badge .neg-hint { color: #94a3b8; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -168,7 +180,14 @@ $jobs = getJobsByTransporter($transporter_id, $pdo);
                         </div>
 
                         <div class="job-actions">
-                            <?php if ($job['status'] === 'accepted' || $job['status'] === 'in_progress'): ?>
+                            <?php if ($job['status'] === 'negotiation'): ?>
+                                <div class="negotiation-badge">
+                                    <i class="fas fa-hourglass-half" style="font-size: 20px; display: block;"></i>
+                                    <div class="neg-title">En négociation</div>
+                                    <div class="neg-price"><?php echo number_format($job['transporter_proposed_price'], 2); ?> DA</div>
+                                    <div class="neg-hint">En attente de la réponse du client</div>
+                                </div>
+                            <?php elseif ($job['status'] === 'accepted' || $job['status'] === 'in_progress'): ?>
                                 <form method="POST" action="" class="action-form" onsubmit="this.querySelector('button').classList.add('loading'); this.querySelector('button').querySelector('i').className='fas fa-spinner';">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                                     <input type="hidden" name="action" value="update_status">

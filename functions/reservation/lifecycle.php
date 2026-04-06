@@ -8,15 +8,15 @@ function logReservationChange($reservation_id, $old, $new, $user_id, $pdo) {
     $stmt->execute([$reservation_id, $old, $new, $user_id]);
 }
 
-function createReservation($clientId, $pickup, $destination, $cargoType, $weight, $volume, $date, $pdo) {
+function createReservation($clientId, $pickup, $destination, $cargoType, $weight, $volume, $date, $price, $priceType, $pdo) {
     try {
         $pdo->beginTransaction();
         $stmt = $pdo->prepare("
             INSERT INTO reservations 
-            (client_id, pickup_location, destination, cargo_type, weight, volume, reservation_date, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (client_id, pickup_location, destination, cargo_type, weight, volume, reservation_date, price, price_type, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt->execute([$clientId, $pickup, $destination, $cargoType, $weight, $volume, $date, ReservationStatus::PENDING]);
+        $stmt->execute([$clientId, $pickup, $destination, $cargoType, $weight, $volume, $date, $price, $priceType, ReservationStatus::PENDING]);
         $reservation_id = $pdo->lastInsertId();
         
         logReservationChange($reservation_id, null, ReservationStatus::PENDING, $clientId, $pdo);
@@ -25,7 +25,7 @@ function createReservation($clientId, $pickup, $destination, $cargoType, $weight
         return true;
     } catch (PDOException $e) {
         $pdo->rollBack();
-        return false;
+        return $e->getMessage();
     }
 }
 
@@ -33,11 +33,14 @@ function acceptReservation($reservation_id, $transporter_id, $vehicle_id, $pdo, 
     require_once __DIR__ . '/../vehicle.php';
     if (!checkVehicleOwnership($vehicle_id, $transporter_id, $pdo)) return "Véhicule non autorisé.";
 
+    $vehicle = getVehicleById($vehicle_id, $pdo);
+    if (!$vehicle) return "Véhicule introuvable.";
+
     try {
         $pdo->beginTransaction();
 
         // Row lock with FOR UPDATE to prevent race conditions
-        $stmtLock = $pdo->prepare("SELECT status FROM reservations WHERE id = ? FOR UPDATE");
+        $stmtLock = $pdo->prepare("SELECT status, weight, price_type FROM reservations WHERE id = ? FOR UPDATE");
         $stmtLock->execute([$reservation_id]);
         $res = $stmtLock->fetch();
 
@@ -49,18 +52,38 @@ function acceptReservation($reservation_id, $transporter_id, $vehicle_id, $pdo, 
         $current_status = $res['status'];
         if ($current_status !== ReservationStatus::PENDING) {
             $pdo->rollBack();
-            return "La demande n'est plus disponible.";
+            return "Cette demande a déjà été prise en charge par un autre transporteur.";
         }
 
-        if (!validateStatusTransition($current_status, ReservationStatus::ACCEPTED)) {
+        // Weight verification: cargo weight (kg) must not exceed vehicle capacity (tons * 1000)
+        $cargoWeight = (float)$res['weight'];
+        $vehicleCapacityKg = (float)$vehicle['capacity'] * 1000;
+        if ($cargoWeight > 0 && $vehicleCapacityKg > 0 && $cargoWeight > $vehicleCapacityKg) {
+            $pdo->rollBack();
+            return "Le poids de la cargaison (" . number_format($cargoWeight, 2) . " kg) dépasse la capacité de votre véhicule (" . number_format((float)$vehicle['capacity'], 2) . " tonnes / " . number_format($vehicleCapacityKg, 2) . " kg).";
+        }
+
+        $new_status = ReservationStatus::ACCEPTED;
+        if ($res['price_type'] === 'negotiable') {
+            if ($price === null || $price <= 0) {
+                $pdo->rollBack();
+                return "Un prix doit être proposé pour une demande négociable.";
+            }
+            $new_status = ReservationStatus::NEGOTIATION;
+        }
+
+        if (!validateStatusTransition($current_status, $new_status)) {
             $pdo->rollBack();
             return "Transition invalide.";
         }
 
         $query = "UPDATE reservations SET vehicle_id = ?, status = ?";
-        $params = [$vehicle_id, ReservationStatus::ACCEPTED];
+        $params = [$vehicle_id, $new_status];
         
-        if ($price !== null && $price > 0) {
+        if ($new_status === ReservationStatus::NEGOTIATION) {
+            $query .= ", transporter_proposed_price = ?";
+            $params[] = $price;
+        } else if ($price !== null && $price > 0 && $res['price_type'] !== 'negotiable') {
             $query .= ", price = ?";
             $params[] = $price;
         }
@@ -77,7 +100,7 @@ function acceptReservation($reservation_id, $transporter_id, $vehicle_id, $pdo, 
             return "Échec de l'acceptation.";
         }
         
-        logReservationChange($reservation_id, $current_status, ReservationStatus::ACCEPTED, $transporter_id, $pdo);
+        logReservationChange($reservation_id, $current_status, $new_status, $transporter_id, $pdo);
         $pdo->commit();
         return true;
     } catch (PDOException $e) {
@@ -188,5 +211,34 @@ function updateJobStatus($job_id, $transporter_id, $new_status, $pdo) {
     } catch (PDOException $e) {
         $pdo->rollBack();
         return false;
+    }
+}
+
+function clientAcceptNegotiation($reservation_id, $client_id, $pdo) {
+    try {
+        $pdo->beginTransaction();
+        $stmtLock = $pdo->prepare("SELECT status, transporter_proposed_price FROM reservations WHERE id = ? AND client_id = ? FOR UPDATE");
+        $stmtLock->execute([$reservation_id, $client_id]);
+        $res = $stmtLock->fetch();
+
+        if (!$res || $res['status'] !== ReservationStatus::NEGOTIATION) {
+            $pdo->rollBack();
+            return "Demande introuvable ou n'est plus en négociation.";
+        }
+
+        if (!validateStatusTransition($res['status'], ReservationStatus::ACCEPTED)) {
+            $pdo->rollBack();
+            return "Transition invalide.";
+        }
+
+        $stmt = $pdo->prepare("UPDATE reservations SET status = ?, price = transporter_proposed_price WHERE id = ?");
+        $stmt->execute([ReservationStatus::ACCEPTED, $reservation_id]);
+        
+        logReservationChange($reservation_id, ReservationStatus::NEGOTIATION, ReservationStatus::ACCEPTED, $client_id, $pdo);
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        return "Erreur BDD : " . $e->getMessage();
     }
 }

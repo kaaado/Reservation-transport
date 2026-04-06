@@ -212,7 +212,13 @@ $requests = getPendingRequests($pdo);
                         </div>
                         
                         <div class="price-badge">
-                            <?php echo ($req['price'] > 0) ? number_format($req['price'], 2) . ' DA' : 'Prix à négocier'; ?>
+                            <?php 
+                                if ($req['price'] > 0 && $req['price_type'] !== 'negotiable') {
+                                    echo number_format($req['price'], 2) . ' DA';
+                                } else {
+                                    echo 'Prix à négocier';
+                                }
+                            ?>
                         </div>
 
                         <?php if ($has_vehicles): ?>
@@ -220,10 +226,10 @@ $requests = getPendingRequests($pdo);
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="request_id" value="<?php echo htmlspecialchars($req['id'], ENT_QUOTES, 'UTF-8'); ?>">
                             
-                            <?php if (!($req['price'] > 0)): ?>
+                            <?php if ($req['price_type'] === 'negotiable'): ?>
                             <div class="form-group" style="margin-bottom: 15px;">
-                                <label style="font-size: 12px; color: #94a3b8;">Saisir le prix négocié (DA)</label>
-                                <input type="number" name="negotiated_price" step="0.01" min="1" class="select-vehicle" placeholder="Prix convenu..." required>
+                                <label style="font-size: 12px; color: #94a3b8;">Proposer un prix (DA)</label>
+                                <input type="number" name="negotiated_price" step="0.01" min="1" class="select-vehicle" placeholder="Votre prix..." required>
                             </div>
                             <?php endif; ?>
 

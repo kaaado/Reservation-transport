@@ -70,9 +70,10 @@ function getJobsByTransporter($transporter_id, $pdo) {
                                 WHEN ? THEN 1 
                                 WHEN ? THEN 2 
                                 WHEN ? THEN 3 
-                                ELSE 4 
+                                WHEN ? THEN 4 
+                                ELSE 5 
                               END, r.reservation_date DESC");
-    $stmt->execute([$transporter_id, ReservationStatus::ACCEPTED, ReservationStatus::IN_PROGRESS, ReservationStatus::COMPLETED]);
+    $stmt->execute([$transporter_id, ReservationStatus::NEGOTIATION, ReservationStatus::ACCEPTED, ReservationStatus::IN_PROGRESS, ReservationStatus::COMPLETED]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 

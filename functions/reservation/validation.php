@@ -5,7 +5,8 @@ function validateStatusTransition($current, $next) {
     if ($current === $next) return true;
     
     $allowed = [
-        ReservationStatus::PENDING => [ReservationStatus::ACCEPTED, ReservationStatus::REJECTED, ReservationStatus::CANCELLED],
+        ReservationStatus::PENDING => [ReservationStatus::ACCEPTED, ReservationStatus::NEGOTIATION, ReservationStatus::REJECTED, ReservationStatus::CANCELLED],
+        ReservationStatus::NEGOTIATION => [ReservationStatus::ACCEPTED, ReservationStatus::REJECTED, ReservationStatus::CANCELLED],
         ReservationStatus::ACCEPTED => [ReservationStatus::IN_PROGRESS, ReservationStatus::CANCELLED],
         ReservationStatus::IN_PROGRESS => [ReservationStatus::COMPLETED],
         ReservationStatus::COMPLETED => [],
