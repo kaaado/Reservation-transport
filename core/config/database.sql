@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS reservations (
     price DECIMAL(10,2) NULL,
     price_type ENUM('fixed', 'negotiable') DEFAULT 'fixed',
     transporter_proposed_price DECIMAL(10,2) NULL,
+    platform_commission DECIMAL(10,2) DEFAULT 0,
+    is_commission_paid TINYINT(1) DEFAULT 0,
     status ENUM('pending', 'negotiation', 'accepted', 'in_progress', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,

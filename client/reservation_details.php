@@ -395,6 +395,23 @@ function getStatusLabel($status) {
                             ?>
                         </span>
                     </div>
+
+                    <?php if ($res['price'] > 0): 
+                        $commRate = defined('APP_COMMISSION') ? APP_COMMISSION : 0.20;
+                        $commValue = $res['price'] * $commRate;
+                    ?>
+                    <div style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); padding: 15px; margin-top: 15px;">
+                        <h4 style="font-size: 12px; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 5px;">Transparence Tarifaire</h4>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #cbd5e1; margin-bottom: 5px;">
+                            <span>Revenu du transporteur</span>
+                            <span style="font-weight: 500;"><?php echo number_format($res['price'] - $commValue, 2); ?> DA</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; color: #cbd5e1;">
+                            <span>Frais de service plateforme (<?php echo ($commRate * 100); ?>%)</span>
+                            <span style="font-weight: 500; color: #10b981;">+<?php echo number_format($commValue, 2); ?> DA</span>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="details-card">

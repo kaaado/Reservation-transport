@@ -92,6 +92,8 @@ Deliverables:
 - `admin/reservations.php` for reservation oversight and forced status interventions.
 - `admin/vehicles.php` for vehicle fleet verification.
 - Universal Admin Access: Ensure admin accounts bypass rigid constraints to successfully test and interact with Client and Transporter modules alike.
+  - **Commission & Billing**: Admin must manually verify and clear transporter commission batches. Once a transporter accumulates 5 reservations where `is_commission_paid = 0`, their account is automatically restricted from accepting new jobs.
+  - **Confirmation de reçu (Payment Verification)**: The transporter pays the debt to the platform's `APP_RIP_ACCOUNT`. The admin receives/verifies the proof of payment (reçu), and then manually intervenes in the admin panel to officially confirm the payment. This action marks the batch as cleared and unblocks the transporter's privileges.
 
 Why this phase matters:
 - Establishes a highly capable governance layer.

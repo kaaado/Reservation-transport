@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
         .security-footer {
             margin-top: 40px;
             font-size: 13px;
-            color: #475569;
+            color: #e8ecf1ff;
             display: flex;
             align-items: center;
             justify-content: center;

@@ -4,6 +4,8 @@
 // 1. Physical Path (C:\xampp\htdocs\Reservation-transport\)
 define('ROOT_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 
+require_once __DIR__ . '/env.php';
+
 // 2. Browser URL (http://localhost/Reservation-transport/)
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? "https://" : "http://";
 $domainName = $_SERVER['HTTP_HOST'];

@@ -32,8 +32,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $price = (float)$_POST['price'];
     }
     
+    $minDateTs = strtotime('+2 days');
+    $givenDateTs = strtotime($date);
+    
     if (empty($pickup) || empty($destination) || empty($date)) {
         $error = "Veuillez remplir tous les champs obligatoires.";
+    } else if ($givenDateTs < $minDateTs) {
+        $error = "La date d'expédition souhaitée doit être au moins 2 jours dans le futur.";
     } else if ($priceType === 'fixed' && ($price === null || $price <= 0)) {
         $error = "Le prix doit être supérieur à 0 pour un prix fixe.";
     } else {
@@ -117,7 +122,7 @@ $dashPath = getRoleDashboardPath($_SESSION['role']);
                 <div class="form-row">
                     <div class="form-group-dash">
                         <label>Date souhaitée *</label>
-                        <input type="datetime-local" name="reservation_date" required>
+                        <input type="datetime-local" name="reservation_date" required min="<?php echo date('Y-m-d\TH:i', strtotime('+2 days')); ?>">
                     </div>
                     <div class="form-group-dash">
                         <label>Type de service *</label>

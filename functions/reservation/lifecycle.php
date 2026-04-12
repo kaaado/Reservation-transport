@@ -39,6 +39,16 @@ function acceptReservation($reservation_id, $transporter_id, $vehicle_id, $pdo, 
     try {
         $pdo->beginTransaction();
 
+        // COMMISSION CHECK LOOP: Unpaid commissions check for >= 5 reservations
+        $stmtCheckVal = $pdo->prepare("SELECT COUNT(*) FROM reservations WHERE vehicle_id IN (SELECT id FROM vehicles WHERE owner_id = ?) AND status = 'completed' AND is_commission_paid = 0");
+        $stmtCheckVal->execute([$transporter_id]);
+        $unpaidCount = $stmtCheckVal->fetchColumn();
+        
+        if ($unpaidCount >= 5) {
+            $pdo->rollBack();
+            return "Paiement requis. Vous avez $unpaidCount opérations terminées non réglées à la plateforme. Veuillez effectuer le virement (batch de 5) au compte RIP : " . APP_RIP_ACCOUNT . " puis contacter l'administration.";
+        }
+
         // Row lock with FOR UPDATE to prevent race conditions
         $stmtLock = $pdo->prepare("SELECT status, weight, price_type FROM reservations WHERE id = ? FOR UPDATE");
         $stmtLock->execute([$reservation_id]);
@@ -179,7 +189,7 @@ function updateJobStatus($job_id, $transporter_id, $new_status, $pdo) {
 
         if (!$row) {
             $pdo->rollBack();
-            return false;
+            return "Mission introuvable ou vous n'y avez pas accès.";
         }
 
         if ($row['status'] === $new_status) {
@@ -189,7 +199,7 @@ function updateJobStatus($job_id, $transporter_id, $new_status, $pdo) {
 
         if (!validateStatusTransition($row['status'], $new_status)) {
             $pdo->rollBack();
-            return false;
+            return "Transition de statut invalide. Vous ne pouvez pas passer de " . $row['status'] . " à " . $new_status . ".";
         }
 
         $stmt = $pdo->prepare("UPDATE reservations SET status = ? WHERE id = ?");
@@ -201,8 +211,15 @@ function updateJobStatus($job_id, $transporter_id, $new_status, $pdo) {
             $checkEarning = $pdo->prepare("SELECT id FROM earnings WHERE reservation_id = ? FOR UPDATE");
             $checkEarning->execute([$job_id]);
             if (!$checkEarning->fetch()) {
+                // Calculate Commission
+                $commissionStr = defined('APP_COMMISSION') ? APP_COMMISSION : 0.20;
+                $calcCommission = (float)$row['price'] * (float)$commissionStr;
+                
                 $earningStmt = $pdo->prepare("INSERT INTO earnings (transporter_id, reservation_id, amount, created_at) VALUES (?, ?, ?, NOW())");
                 $earningStmt->execute([$transporter_id, $job_id, $row['price']]);
+
+                $comStmt = $pdo->prepare("UPDATE reservations SET platform_commission = ? WHERE id = ?");
+                $comStmt->execute([$calcCommission, $job_id]);
             }
         }
         
@@ -210,7 +227,7 @@ function updateJobStatus($job_id, $transporter_id, $new_status, $pdo) {
         return true;
     } catch (PDOException $e) {
         $pdo->rollBack();
-        return false;
+        return "Erreur DB: " . $e->getMessage();
     }
 }
 

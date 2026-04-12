@@ -19,10 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $job_id = (int)$_POST['job_id'];
         $new_status = $_POST['status'];
         
-        if (updateJobStatus($job_id, $transporter_id, $new_status, $pdo)) {
+        $result = updateJobStatus($job_id, $transporter_id, $new_status, $pdo);
+        if ($result === true) {
             $_SESSION['success'] = "Statut de la mission mis à jour.";
         } else {
-            $_SESSION['error'] = "Erreur lors de la mise à jour du statut.";
+            $_SESSION['error'] = is_string($result) ? $result : "Erreur lors de la mise à jour du statut. Vérifiez que la transition est autorisée.";
         }
         header('Location: jobs.php');
         exit;
@@ -178,6 +179,22 @@ $jobs = getJobsByTransporter($transporter_id, $pdo);
                                 </div>
                             </div>
                         </div>
+
+                        <?php if ($job['price'] > 0): 
+                            $commRate = defined('APP_COMMISSION') ? APP_COMMISSION : 0.20;
+                            $commValue = $job['price'] * $commRate;
+                            $netValue  = $job['price'] - $commValue;
+                        ?>
+                        <div style="padding: 0 20px; border-left: 1px solid rgba(255,255,255,0.05); min-width: 180px;">
+                            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase;">Aperçu Financier</div>
+                            <div style="font-size: 13px; color: #cbd5e1; display:flex; justify-content:space-between;">
+                                <span>Plateforme:</span> <span style="color:#ef4444">-<?php echo number_format($commValue, 2); ?></span>
+                            </div>
+                            <div style="font-size: 13px; font-weight: 700; color: #10b981; display:flex; justify-content:space-between; margin-top: 2px;">
+                                <span><i class="fas fa-wallet"></i> Net:</span> <span><?php echo number_format($netValue, 2); ?> DA</span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
                         <div class="job-actions">
                             <?php if ($job['status'] === 'negotiation'): ?>

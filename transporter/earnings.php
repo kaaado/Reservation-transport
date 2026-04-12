@@ -40,20 +40,40 @@ $history = getEarningsHistory($transporter_id, $pdo);
             </div>
         </div>
 
-        <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 20px;">
-            <div class="stat-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2);">
-                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i class="fas fa-calendar-alt"></i></div>
-                <div class="stat-details">
-                    <h3>Revenus du mois (<?php echo date('F'); ?>)</h3>
-                    <div class="num" style="color: #10b981;"><?php echo number_format($month_earnings, 2); ?> DA</div>
-                </div>
-            </div>
-            
+        <?php
+            $stmtSum = $pdo->prepare("SELECT SUM(amount) as total_gross FROM earnings WHERE transporter_id = ?");
+            $stmtSum->execute([$transporter_id]);
+            $gross = $stmtSum->fetchColumn() ?: 0;
+
+            $stmtComm = $pdo->prepare("SELECT SUM(r.platform_commission) FROM reservations r JOIN vehicles v ON r.vehicle_id = v.id WHERE v.owner_id = ? AND r.status = 'completed'");
+            $stmtComm->execute([$transporter_id]);
+            $total_commission = $stmtComm->fetchColumn() ?: 0;
+
+            $net_earnings = $gross - $total_commission;
+        ?>
+
+        <div class="stats-grid" style="grid-template-columns: repeat(autofit, minmax(250px, 1fr)); margin-top: 20px;">
             <div class="stat-card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05)); border: 1px solid rgba(59, 130, 246, 0.2);">
                 <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;"><i class="fas fa-wallet"></i></div>
                 <div class="stat-details">
-                    <h3>Revenus Totaux</h3>
-                    <div class="num" style="color: #3b82f6;"><?php echo number_format($total_earnings, 2); ?> DA</div>
+                    <h3 style="font-size:12px;">Total Brut Encaissé</h3>
+                    <div class="num" style="color: #3b82f6; font-size:18px;"><?php echo number_format($gross, 2); ?> DA</div>
+                </div>
+            </div>
+            
+            <div class="stat-card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border: 1px solid rgba(239, 68, 68, 0.2);">
+                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.2); color: #ef4444;"><i class="fas fa-hand-holding-usd"></i></div>
+                <div class="stat-details">
+                    <h3 style="font-size:12px;">Part Plateforme (Toutes missions)</h3>
+                    <div class="num" style="color: #ef4444; font-size:18px;">-<?php echo number_format($total_commission, 2); ?> DA</div>
+                </div>
+            </div>
+
+            <div class="stat-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2);">
+                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-details">
+                    <h3 style="font-size:12px;">Bénéfice Net Personnel</h3>
+                    <div class="num" style="color: #10b981; font-size:22px;"><?php echo number_format($net_earnings, 2); ?> DA</div>
                 </div>
             </div>
         </div>
@@ -76,7 +96,8 @@ $history = getEarningsHistory($transporter_id, $pdo);
                                 <th>Date d'encaissement</th>
                                 <th>Trajet</th>
                                 <th>Montant</th>
-                                <th>Statut du paiement</th>
+                                <th>Commission Plateforme</th>
+                                <th>Statut Client</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -85,7 +106,11 @@ $history = getEarningsHistory($transporter_id, $pdo);
                                     <td><?php echo date('d/m/Y H:i', strtotime($earning['created_at'])); ?></td>
                                     <td><?php echo htmlspecialchars($earning['pickup_location'] . ' → ' . $earning['destination'], ENT_QUOTES, 'UTF-8'); ?></td>
                                     <td style="font-weight: 700; color: #10b981;">+ <?php echo number_format($earning['amount'], 2); ?> DA</td>
-                                    <td><span class="badge badge-success">Crédité</span></td>
+                                    <td style="font-size: 13px; color: #ef4444;">- <?php 
+                                        $commRate = defined('APP_COMMISSION') ? APP_COMMISSION : 0.20;
+                                        echo number_format($earning['amount'] * $commRate, 2); 
+                                    ?> DA</td>
+                                    <td><span class="badge badge-success">Encaissé Client</span></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

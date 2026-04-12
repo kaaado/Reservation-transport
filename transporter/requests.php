@@ -54,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     }
 
+// Check batch limits globally for requests
+$stmtCheckVal = $pdo->prepare("SELECT COUNT(*) FROM reservations WHERE vehicle_id IN (SELECT id FROM vehicles WHERE owner_id = ?) AND status = 'completed' AND is_commission_paid = 0");
+$stmtCheckVal->execute([$transporter_id]);
+$unpaidCountValue = $stmtCheckVal->fetchColumn();
+$is_batch_blocked = ($unpaidCountValue >= 5);
+
 $requests = getPendingRequests($pdo);
 ?>
 <!DOCTYPE html>
@@ -169,12 +175,26 @@ $requests = getPendingRequests($pdo);
             </div>
         </div>
 
-        <?php if (!$has_vehicles): ?>
-            <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 15px 20px; border-radius: 6px; margin-top: 20px; color: #fcd34d;">
-                <i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>
-                Vous devez avoir au moins un véhicule actif pour accepter des missions. <a href="vehicle_form.php" style="color: #fff; text-decoration: underline;">Ajouter un véhicule</a>
+        <?php if ($is_batch_blocked): ?>
+            <div style="background: rgba(239, 68, 68, 0.15); border: 2px solid #ef4444; padding: 25px; border-radius: 12px; margin-top: 20px; color: #f8fafc; text-align: center;">
+                <i class="fas fa-lock" style="font-size: 32px; color: #ef4444; margin-bottom: 10px;"></i>
+                <h3 style="color: #ef4444; margin-bottom: 10px;">Compte Restreint : Plafond de Dette Atteint</h3>
+                <p style="margin-bottom: 15px;">Vous avez atteint la limite stricte de <strong>5 expéditions terminées</strong> non réglées avec la plateforme.<br>Conformément à nos CGU, vos capacités d'acceptation de nouvelles missions sont suspendues.</p>
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; display: inline-block; text-align: left; margin: 0 auto;">
+                    <strong>Comment débloquer votre compte :</strong>
+                    <ol style="margin-top: 10px; margin-left: 20px; padding: 0;">
+                        <li>Effectuez le virement de vos commissions via CCP/RIP au : <strong style="color: #fbbf24;"><?php echo defined('APP_RIP_ACCOUNT') ? APP_RIP_ACCOUNT : '07999999999999999999'; ?></strong></li>
+                        <li>Contactez l'administration pour valider le reçu.</li>
+                    </ol>
+                </div>
             </div>
-        <?php endif; ?>
+        <?php else: ?>
+            <?php if (!$has_vehicles): ?>
+                <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 15px 20px; border-radius: 6px; margin-top: 20px; color: #fcd34d;">
+                    <i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>
+                    Vous devez avoir au moins un véhicule actif pour accepter des missions. <a href="vehicle_form.php" style="color: #fff; text-decoration: underline;">Ajouter un véhicule</a>
+                </div>
+            <?php endif; ?>
 
         <?php if (empty($requests)): ?>
             <div style="text-align: center; padding: 60px 20px; background: rgba(30, 41, 59, 0.5); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1); margin-top: 20px;">
@@ -220,8 +240,24 @@ $requests = getPendingRequests($pdo);
                                 }
                             ?>
                         </div>
+                        <?php if ($req['price'] > 0 && $req['price_type'] !== 'negotiable'): 
+                            $commRate = defined('APP_COMMISSION') ? APP_COMMISSION : 0.20;
+                            $commValue = $req['price'] * $commRate;
+                            $netValue = $req['price'] - $commValue;
+                        ?>
+                        <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid #f59e0b; padding: 12px 15px; margin-bottom: 20px; border-radius: 6px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom: 6px; align-items: center;">
+                                <span style="font-size:12px; color:#94a3b8;"><i class="fas fa-shield-alt" style="margin-right:4px;"></i> Commission Plateforme (<?php echo ($commRate * 100); ?>%)</span>
+                                <span style="font-size:12px; font-weight:600; color:#ef4444;">- <?php echo number_format($commValue, 2); ?> DA</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
+                                <span style="font-size:13px; color:#f8fafc; font-weight:600;"><i class="fas fa-wallet" style="color:#10b981; margin-right:4px;"></i> Revenu Net</span>
+                                <span style="font-size:15px; font-weight:800; color:#10b981;"><?php echo number_format($netValue, 2); ?> DA</span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
-                        <?php if ($has_vehicles): ?>
+                        <?php if ($has_vehicles && !$is_batch_blocked): ?>
                         <form method="POST" action="" class="accept-form" onsubmit="return confirmAction(this, event);">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                             <input type="hidden" name="request_id" value="<?php echo htmlspecialchars($req['id'], ENT_QUOTES, 'UTF-8'); ?>">
@@ -255,7 +291,8 @@ $requests = getPendingRequests($pdo);
                     </div>
                 <?php endforeach; ?>
             </div>
-        <?php endif; ?>
+        <?php endif; // closes empty request check ?>
+        <?php endif; // closes batch blocked else branch ?>
 
     </main>
 </div>
