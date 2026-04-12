@@ -35,11 +35,19 @@ try {
     $stmt_check_status->execute([$_SESSION['user_id']]);
     $current_status = $stmt_check_status->fetchColumn();
 
-    if ($current_status === 'suspended' || $current_status === 'pending') {
-        session_unset();
-        session_destroy();
-        header("Location: " . URL_ROOT . "system/suspended.php");
-        exit();
+    if ($current_status !== 'active') {
+        if ($current_status === 'pending') {
+            $current_page = basename($_SERVER['PHP_SELF']);
+            if ($current_page !== 'pending.php' && $current_page !== 'logout.php') {
+                header("Location: " . URL_ROOT . "system/pending.php");
+                exit();
+            }
+        } else {
+            session_unset();
+            session_destroy();
+            header("Location: " . URL_ROOT . "auth/login.php?error=inactive");
+            exit();
+        }
     }
 } catch (Exception $e) {
     // Failsafe execution policy

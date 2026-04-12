@@ -81,19 +81,22 @@ Why this phase matters:
 
 ## Phase 6 — Admin Panel
 
-Goal: allow administrators to control the platform.
+Goal: allow administrators to control the platform comprehensively, while maintaining cross-role access.
 
 Deliverables:
-- `admin/dashboard.php` with summary metrics.
-- `admin/users.php` for user management.
-- `admin/reservations.php` for reservation oversight and status updates.
-- `admin/vehicles.php` for vehicle verification.
-- `admin/statistics.php` for usage and growth data.
+- `admin/dashboard.php` with summary business metrics and quick actions.
+- `admin/users.php` for robust user CRUD capabilities. Must include:
+  - User status administration (Active, Pending, Suspended).
+  - ID Verification Engine: Admin visually inspecting user-uploaded `id_card_url` and flipping `id_is_verified` boolean.
+  - Profile modification and auditing.
+- `admin/reservations.php` for reservation oversight and forced status interventions.
+- `admin/vehicles.php` for vehicle fleet verification.
+- Universal Admin Access: Ensure admin accounts bypass rigid constraints to successfully test and interact with Client and Transporter modules alike.
 
 Why this phase matters:
-- Adds governance and supervision.
-- Allows admin to keep the platform healthy.
-- Enables corrective actions when user or reservation issues occur.
+- Establishes a highly capable governance layer.
+- Accelerates the onboarding verification loop.
+- Eliminates the need for multiple admin test accounts by granting all-inclusive visibility.
 
 ## Phase 7 — Finalization & PFE Preparation
 

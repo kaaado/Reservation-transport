@@ -18,7 +18,7 @@ function registerUser($name, $email, $password, $phone, $role, $pdo) {
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
-    $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, phone, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'active', NOW(), NOW())");
+    $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, phone, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'pending', NOW(), NOW())");
     
     try {
         $stmt->execute([$name, $email, $hash, $phone, $role]);
@@ -46,7 +46,16 @@ function loginUser($email, $password, $pdo, $remember = false) {
     }
 
     if ($user['status'] === 'suspended') {
-        return "Votre compte est suspendu";
+        return "Votre compte a été suspendu par l'administration.";
+    }
+
+    if ($user['status'] === 'pending') {
+        session_regenerate_id(true);
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['name'] = $user['name'];
+        $_SESSION['status'] = 'pending';
+        return "pending_redirect";
     }
 
     // Session Hardening

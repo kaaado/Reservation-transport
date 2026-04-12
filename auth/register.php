@@ -35,19 +35,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $result = registerUser($name, $email, $password, $phone, $role, $pdo);
             if (is_numeric($result)) {
-                // Auto login mechanism
+                // Set session for pending user so they can upload ID
                 $_SESSION['user_id'] = $result;
                 $_SESSION['role'] = $role;
                 $_SESSION['name'] = $name;
+                $_SESSION['status'] = 'pending';
                 
-                // Update last login
-                $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-                $updateStmt->execute([$result]);
-                
-                // Redirect
-                if ($role === 'client') header("Location: " . URL_ROOT . "client/dashboard.php");
-                if ($role === 'transporter') header("Location: " . URL_ROOT . "transporter/dashboard.php");
-                if ($role === 'admin') header("Location: " . URL_ROOT . "admin/dashboard.php");
+                // Redirect to pending approval page
+                header("Location: " . URL_ROOT . "system/pending.php");
                 exit();
             } else {
                 $error = $result;

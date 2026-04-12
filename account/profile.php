@@ -191,7 +191,7 @@ $dashPath = getRoleDashboard($role);
                     <ul class="info-list">
                         <li><i class="fas fa-envelope"></i> <?php echo htmlspecialchars($user['email']); ?></li>
                         <li><i class="fas fa-phone"></i> <?php echo htmlspecialchars($user['phone'] ?? 'Non renseigné'); ?></li>
-                        <li><i class="fas fa-map-marker-alt"></i> Algérie</li>
+                        <li><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($user['region'] ?? 'Algérie'); ?></li>
                     </ul>
                 </div>
                 
