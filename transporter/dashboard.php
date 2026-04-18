@@ -13,6 +13,10 @@ $db = new Database();
 $pdo = $db->getConnection();
 $transporter_id = $_SESSION['user_id'];
 
+// MIDDLEWARE: Force contract signature
+require_once INC_PATH . 'contract_middleware.php';
+checkTransporterContract($pdo);
+
 // Get statistics
 $vehicles = getVehiclesByTransporter($transporter_id, $pdo);
 $active_vehicles = count(array_filter($vehicles, fn($v) => $v['status'] === 'active'));
@@ -28,7 +32,7 @@ $total_earnings = calculateEarnings($transporter_id, $pdo);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Transporteur - CargoConnect</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?php echo CSS_URL; ?>style.css">
     <link rel="stylesheet" href="<?php echo CSS_URL; ?>dashboard.css">
     
@@ -47,7 +51,7 @@ $total_earnings = calculateEarnings($transporter_id, $pdo);
                 <p style="color: #94a3b8; margin-top: 5px;">Gérez vos missions et véhicules.</p>
             </div>
             <div>
-                <a href="<?php echo URL_ROOT; ?>transporter/vehicle_form.php" class="btn btn-primary"><i class="fas fa-plus"></i> Nouveau Véhicule</a>
+                <a href="<?php echo URL_ROOT; ?>transporter/vehicle_form.php" class="btn btn-primary"><i class="fas fa-plus"></i> Ajouter un véhicule</a>
             </div>
         </div>
 

@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS users (
     id_card_url VARCHAR(255) NULL,
     id_is_verified TINYINT(1) DEFAULT 0,
     region VARCHAR(255) NULL DEFAULT 'Algérie',
+    contract_signed TINYINT(1) DEFAULT 0,
+    contract_signed_at DATETIME NULL,
+    has_accepted_contract TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login DATETIME NULL,
@@ -34,6 +37,8 @@ CREATE TABLE IF NOT EXISTS vehicles (
     capacity DECIMAL(8,2) NOT NULL COMMENT 'Capacity in cubic meters/tons',
     plate_number VARCHAR(20) NOT NULL UNIQUE,
     status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+    is_activation_requested TINYINT(1) DEFAULT 0, 
+    deactivated_by_admin TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -103,6 +108,20 @@ CREATE TABLE IF NOT EXISTS reservation_logs (
     INDEX idx_log_reservation (reservation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT UNSIGNED NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    target_type VARCHAR(50) NOT NULL,
+    target_id INT UNSIGNED DEFAULT NULL,
+    details TEXT DEFAULT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_action (action),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- SEED DATA
 
 INSERT INTO users (name, email, password_hash, phone, role, status) VALUES 
@@ -125,3 +144,5 @@ INSERT INTO earnings (transporter_id, reservation_id, amount) VALUES
 
 INSERT INTO notifications (user_id, message, status) VALUES 
 (3, 'Reservation completed successfully.', 'unread');
+
+ALTER TABLE users ADD COLUMN contract_signed TINYINT(1) DEFAULT 0;

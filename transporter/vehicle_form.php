@@ -124,12 +124,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <?php if ($is_edit): ?>
                 <div class="form-row">
-                    <div class="form-group-dash">
+                    <div class="form-group-dash" style="position: relative;">
                         <label for="status">Statut opérationnel</label>
-                        <select name="status" id="status" required>
-                            <option value="active" <?php echo ($vehicle['status'] ?? '') === 'active' ? 'selected' : ''; ?>>En service (Actif)</option>
-                            <option value="inactive" <?php echo ($vehicle['status'] ?? '') === 'inactive' ? 'selected' : ''; ?>>Hors service (Inactif)</option>
-                        </select>
+                        <?php if ($vehicle['deactivated_by_admin'] == 1): ?>
+                            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px; padding: 10px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 10px;">
+                                <i class="fas fa-lock" style="color: #ef4444; margin-top: 3px;"></i>
+                                <span style="font-size: 11px; color: #cbd5e1; line-height: 1.4;">
+                                    Ce véhicule a été désactivé par l'administration. Vous ne pouvez pas le réactiver vous-même. 
+                                    Veuillez utiliser l'option <strong>"Demander Activation"</strong> sur la liste des véhicules.
+                                </span>
+                            </div>
+                            <select disabled style="cursor: not-allowed; opacity: 0.7;">
+                                <option selected>Bloqué par l'Administration</option>
+                            </select>
+                            <input type="hidden" name="status" value="inactive">
+                        <?php else: ?>
+                            <select name="status" id="status" required>
+                                <option value="active" <?php echo ($vehicle['status'] ?? '') === 'active' ? 'selected' : ''; ?>>En service (Actif)</option>
+                                <option value="inactive" <?php echo ($vehicle['status'] ?? '') === 'inactive' ? 'selected' : ''; ?>>Hors service (Inactif)</option>
+                            </select>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>

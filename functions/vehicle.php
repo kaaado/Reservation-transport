@@ -24,6 +24,13 @@ function updateVehicle($id, $data, $pdo) {
         return "Non autorisé.";
     }
 
+    $current = getVehicleById($id, $pdo);
+    
+    // If admin deactivated it and transporter tries to reactivate
+    if ($current['deactivated_by_admin'] == 1 && $data['status'] === 'active') {
+        return "Ce véhicule a été désactivé par l'administration. Vous devez envoyer une demande d'activation.";
+    }
+
     $stmt = $pdo->prepare("UPDATE vehicles SET vehicle_type = ?, capacity = ?, plate_number = ?, status = ?, updated_at = NOW() WHERE id = ?");
     try {
         $stmt->execute([
@@ -64,4 +71,16 @@ function checkVehicleOwnership($vehicle_id, $transporter_id, $pdo) {
     $stmt = $pdo->prepare("SELECT id FROM vehicles WHERE id = ? AND owner_id = ?");
     $stmt->execute([$vehicle_id, $transporter_id]);
     return $stmt->fetch() !== false;
+}
+
+function requestVehicleActivation($vehicle_id, $owner_id, $pdo) {
+    if (!checkVehicleOwnership($vehicle_id, $owner_id, $pdo)) return false;
+    $stmt = $pdo->prepare("UPDATE vehicles SET is_activation_requested = 1 WHERE id = ?");
+    if ($stmt->execute([$vehicle_id])) {
+        // NOTIFICATION: Notify Admin
+        require_once FUNC_PATH . 'admin/notifications.php';
+        notifyAdmin("Demande d'activation reçue pour le véhicule #$vehicle_id (Transporteur #$owner_id).", $pdo);
+        return true;
+    }
+    return false;
 }

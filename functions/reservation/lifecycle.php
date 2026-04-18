@@ -111,6 +111,14 @@ function acceptReservation($reservation_id, $transporter_id, $vehicle_id, $pdo, 
         }
         
         logReservationChange($reservation_id, $current_status, $new_status, $transporter_id, $pdo);
+
+        // NOTIFICATION: Notify Client
+        $clientId = $pdo->query("SELECT client_id FROM reservations WHERE id = $reservation_id")->fetchColumn();
+        $msg = ($new_status === ReservationStatus::NEGOTIATION) 
+            ? "Un transporteur a fait une proposition de prix pour votre demande #$reservation_id."
+            : "Votre demande de transport #$reservation_id a été acceptée par un transporteur.";
+        sendAdminNotification($clientId, $msg, $pdo);
+
         $pdo->commit();
         return true;
     } catch (PDOException $e) {
@@ -207,6 +215,15 @@ function updateJobStatus($job_id, $transporter_id, $new_status, $pdo) {
 
         logReservationChange($job_id, $row['status'], $new_status, $transporter_id, $pdo);
 
+        // NOTIFICATION: Notify Client
+        $clientId = $pdo->query("SELECT client_id FROM reservations WHERE id = $job_id")->fetchColumn();
+        $statusLabels = [
+            ReservationStatus::IN_PROGRESS => "est maintenant en route",
+            ReservationStatus::COMPLETED => "a été livrée avec succès"
+        ];
+        $label = $statusLabels[$new_status] ?? "a changé de statut ({$new_status})";
+        sendAdminNotification($clientId, "Votre cargaison pour la demande #$job_id $label.", $pdo);
+
         if ($new_status === ReservationStatus::COMPLETED && $row['price'] > 0) {
             $checkEarning = $pdo->prepare("SELECT id FROM earnings WHERE reservation_id = ? FOR UPDATE");
             $checkEarning->execute([$job_id]);
@@ -252,6 +269,11 @@ function clientAcceptNegotiation($reservation_id, $client_id, $pdo) {
         $stmt->execute([ReservationStatus::ACCEPTED, $reservation_id]);
         
         logReservationChange($reservation_id, ReservationStatus::NEGOTIATION, ReservationStatus::ACCEPTED, $client_id, $pdo);
+
+        // NOTIFICATION: Notify Transporter
+        $transporterId = $pdo->query("SELECT v.owner_id FROM vehicles v JOIN reservations r ON r.vehicle_id = v.id WHERE r.id = $reservation_id")->fetchColumn();
+        sendAdminNotification($transporterId, "Le client a accepté votre proposition de prix pour la demande #$reservation_id.", $pdo);
+
         $pdo->commit();
         return true;
     } catch (PDOException $e) {

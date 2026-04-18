@@ -11,6 +11,10 @@ $db = new Database();
 $pdo = $db->getConnection();
 $transporter_id = $_SESSION['user_id'];
 
+// MIDDLEWARE: Force contract signature
+require_once INC_PATH . 'contract_middleware.php';
+checkTransporterContract($pdo);
+
 // Handle delete action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
     // CSRF check
@@ -23,6 +27,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $_SESSION['success'] = "Véhicule supprimé avec succès.";
     } else {
         $_SESSION['error'] = "Erreur lors de la suppression ou véhicule introuvable.";
+    }
+    header('Location: vehicles.php');
+    exit;
+}
+
+// Handle activation request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'request_activation') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("CSRF validation failed");
+    }
+    $vehicle_id = (int)$_POST['vehicle_id'];
+    if (requestVehicleActivation($vehicle_id, $transporter_id, $pdo)) {
+        $_SESSION['success'] = "Demande d'activation envoyée à l'administration.";
+    } else {
+        $_SESSION['error'] = "Erreur lors de l'envoi de la demande.";
+    }
+    header('Location: vehicles.php');
+    exit;
+}
+
+// Handle self activation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'self_activate') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die("CSRF validation failed");
+    }
+    $vehicle_id = (int)$_POST['vehicle_id'];
+    
+    // Check if it was NOT deactivated by admin
+    $v = getVehicleById($vehicle_id, $pdo);
+    if ($v && $v['owner_id'] == $transporter_id && $v['deactivated_by_admin'] == 0) {
+        $stmt = $pdo->prepare("UPDATE vehicles SET status = 'active' WHERE id = ?");
+        $stmt->execute([$vehicle_id]);
+        $_SESSION['success'] = "Véhicule réactivé avec succès.";
+    } else {
+        $_SESSION['error'] = "Action non autorisée sur ce véhicule.";
     }
     header('Location: vehicles.php');
     exit;
@@ -97,7 +136,17 @@ $vehicles = getVehiclesByTransporter($transporter_id, $pdo);
         .vehicle-actions {
             margin-top: 20px;
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
+        }
+        .btn-glow {
+            box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
+            animation: btn-pulse 2s infinite;
+        }
+        @keyframes btn-pulse {
+            0% { box-shadow: 0 0 5px rgba(255, 140, 0, 0.4); }
+            50% { box-shadow: 0 0 15px rgba(255, 140, 0, 0.7); transform: scale(1.02); }
+            100% { box-shadow: 0 0 5px rgba(255, 140, 0, 0.4); }
         }
     </style>
 </head>
@@ -134,6 +183,8 @@ $vehicles = getVehiclesByTransporter($transporter_id, $pdo);
                             <div>
                                 <?php if ($vehicle['status'] === 'active'): ?>
                                     <span class="badge badge-success">Actif</span>
+                                <?php elseif ($vehicle['is_activation_requested']): ?>
+                                    <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">Activation demandée</span>
                                 <?php else: ?>
                                     <span class="badge badge-danger">Inactif</span>
                                 <?php endif; ?>
@@ -157,16 +208,39 @@ $vehicles = getVehiclesByTransporter($transporter_id, $pdo);
                         
                         <div class="vehicle-actions">
                             <a href="vehicle_form.php?id=<?php echo htmlspecialchars($vehicle['id'], ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-outline" style="flex: 1; text-align: center;"><i class="fas fa-edit"></i> Modifier</a>
-                            <form method="POST" action="vehicles.php" style="flex: 1;" onsubmit="if(!confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) return false; this.querySelector('button').classList.add('loading'); this.querySelector('button').innerHTML='<i class=\'fas fa-spinner fa-spin\'></i> Patientez...'; return true;">
+                            
+                            <?php if ($vehicle['status'] === 'inactive'): ?>
+                                <?php if ($vehicle['deactivated_by_admin'] == 1): ?>
+                                    <?php if (!$vehicle['is_activation_requested']): ?>
+                                        <form method="POST" style="flex: 1;">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
+                                            <input type="hidden" name="action" value="request_activation">
+                                            <input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($vehicle['id'], ENT_QUOTES, 'UTF-8'); ?>">
+                                            <button type="submit" class="btn btn-primary btn-glow" style="width: 100%;"><i class="fas fa-paper-plane"></i> Demander Activation</button>
+                                        </form>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <!-- User deactivated it themselves - they can just activate it back -->
+                                    <form method="POST" action="vehicles.php" style="flex: 1;">
+                                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                        <input type="hidden" name="action" value="self_activate">
+                                        <input type="hidden" name="vehicle_id" value="<?php echo $vehicle['id']; ?>">
+                                        <button type="submit" class="btn btn-outline" style="width: 100%; border-color: #10b981; color: #10b981;"><i class="fas fa-power-off"></i> Réactiver</button>
+                                    </form>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
+                            <form method="POST" action="vehicles.php" style="flex: 1;" onsubmit="if(!confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) return false;">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="vehicle_id" value="<?php echo htmlspecialchars($vehicle['id'], ENT_QUOTES, 'UTF-8'); ?>">
-                                <button type="submit" class="btn btn-outline" style="width: 100%; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); transition: all 0.3s ease;"><i class="fas fa-trash"></i> Supprimer</button>
+                                <button type="submit" class="btn btn-outline" style="width: 100%; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i class="fas fa-trash"></i> Supprimer</button>
                             </form>
                         </div>
                     </div>
                 <?php endforeach; ?>
             </div>
+
             <style>
                 button.loading { opacity: 0.7; pointer-events: none; }
             </style>

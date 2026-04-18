@@ -55,39 +55,143 @@ if (!function_exists('resolveNotifLink')) {
         <div class="page-header">
             <div>
                 <h1>Centre de Notifications</h1>
-                <p style="color: #94a3b8; margin-top: 5px;">Historique complet de vos alertes systèmes.</p>
+                <p style="color: #94a3b8; margin-top: 5px;">Gérez vos alertes et l'historique de votre activité.</p>
             </div>
-            <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 15px;">
-                <a href="<?php echo $dashPath; ?>" class="btn-secondary" style="width: auto; padding: 10px 20px;"><i class="fas fa-arrow-left"></i> Retour au tableau de bord</a>
-                <button onclick="markAsRead('all'); location.reload();" class="btn-primary" style="width: auto;"><i class="fas fa-check-double"></i> Tout marquer lu</button>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <a href="<?php echo $dashPath; ?>" class="btn-secondary" style="width: auto; padding: 10px 20px; font-size: 13px; background: rgba(255,255,255,0.05);"><i class="fas fa-arrow-left"></i> Retour Dashboard</a>
+                <button onclick="markAsRead('all')" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 13px;"><i class="fas fa-check-double"></i> Tout marquer lu</button>
+                <button onclick="deleteAllNotifs()" class="btn-outline" style="width: auto; padding: 10px 20px; font-size: 13px; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);"><i class="fas fa-trash-alt"></i> Vider tout</button>
             </div>
         </div>
 
-        <?php 
-        $table_headers = ['#', '', 'Message', 'Date', 'Action'];
-        $table_data = [];
-        $i = 1;
-        foreach($notifications as $notif) {
-            
-            $isUnread = $notif['status'] === 'unread';
-            $iconColor = $isUnread ? '#ff8c00' : '#94a3b8';
-            $iconBg = $isUnread ? 'rgba(255,140,0,0.1)' : 'rgba(255,255,255,0.05)';
-            $icon = "<div style='display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; background:$iconBg;'><i class='fas fa-bell' style='color:$iconColor;'></i></div>";
-            
-            $msgColor = $isUnread ? 'white' : '#cbd5e1';
-            $fontWeight = $isUnread ? '600' : '400';
-            $msgHTML = "<div style='color:$msgColor; font-weight:$fontWeight;'>" . htmlspecialchars($notif['message']) . "</div>";
-            
-            $dateHTML = "<div style='color:#64748b; font-size:13px;'><i class='far fa-clock'></i> " . date('d/m/Y H:i', strtotime($notif['created_at'])) . "</div>";
-            
-            $link = resolveNotifLink($notif, $_SESSION['role']);
-            $actionBtn = "<a href='#' onclick=\"markAndNavigate({$notif['id']}, '{$link}', event)\" class='btn-small'><i class='fas fa-eye'></i> Afficher</a>";
-            $table_data[] = [$i++, $icon, $msgHTML, $dateHTML, $actionBtn];
+        <div class="notifications-list" id="main-notif-container">
+            <?php if (empty($notifications)): ?>
+                <div id="empty-notif" style="text-align:center; padding:80px; color:#64748b; background: rgba(30,41,59,0.3); border-radius: 16px; border: 1px dashed rgba(255,255,255,0.05); margin-top: 20px;">
+                    <i class="fas fa-bell-slash" style="font-size:40px; margin-bottom:15px; opacity:0.3;"></i>
+                    <p>Aucune notification enregistrée pour le moment.</p>
+                </div>
+            <?php else: ?>
+                <?php foreach($notifications as $notif): ?>
+                    <div class="notif-row <?php echo $notif['status']; ?>" id="page-notif-<?php echo $notif['id']; ?>">
+                        <div class="notif-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div class="notif-body">
+                            <div class="notif-msg"><?php echo htmlspecialchars($notif['message']); ?></div>
+                            <div class="notif-date"><i class="far fa-clock"></i> <?php echo date('d/m/Y H:i', strtotime($notif['created_at'])); ?></div>
+                        </div>
+                        <div class="notif-row-actions">
+                            <?php if ($notif['status'] === 'unread'): ?>
+                                <button onclick="markAsRead(<?php echo $notif['id']; ?>)" title="Marquer lu" class="mark-read-btn"><i class="fas fa-circle"></i></button>
+                            <?php endif; ?>
+                            <button onclick="deleteNotif(<?php echo $notif['id']; ?>)" class="delete" title="Supprimer"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
+    </main>
+</div>
+
+<style>
+.notifications-list { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+.notif-row {
+    background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 12px; padding: 18px; display: flex; align-items: center; gap: 18px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.notif-row:hover { background: rgba(30, 41, 59, 0.8); border-color: rgba(255,140,0,0.3); transform: translateX(5px); }
+.notif-row.unread { border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.04); }
+.notif-icon {
+    width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.03); color: #64748b; font-size: 18px;
+}
+.notif-row.unread .notif-icon { background: rgba(245,158,11,0.08); color: #f59e0b; }
+.notif-body { flex: 1; }
+.notif-msg { color: #f1f5f9; font-size: 14px; margin-bottom: 6px; font-weight: 500; }
+.notif-row.read .notif-msg { color: #94a3b8; font-weight: 400; }
+.notif-date { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 6px; }
+.notif-row-actions { display: flex; gap: 8px; }
+.notif-row-actions button {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); color: #64748b; 
+    cursor: pointer; font-size: 14px; padding: 8px; border-radius: 8px;
+    transition: all 0.2s;
+}
+.notif-row-actions button:hover { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); }
+.notif-row-actions button.delete:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
+</style>
+
+<script>
+// Specialized sync for this page when SSE events occur
+function syncNotificationPage(data) {
+    // We could re-render the whole list, but let's just handle state updates via markAsRead
+}
+
+async function markAsRead(id) {
+    const formData = new FormData();
+    formData.append('csrf_token', CSRF_TOKEN);
+    formData.append('id', id);
+    
+    await fetch(URL_ROOT + 'api/notifications.php?action=mark_read', {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (id === 'all') {
+        document.querySelectorAll('.notif-row.unread').forEach(row => {
+            row.classList.remove('unread');
+            row.classList.add('read');
+            const btn = row.querySelector('.mark-read-btn');
+            if (btn) btn.remove();
+        });
+    } else {
+        const row = document.getElementById(`page-notif-${id}`);
+        if(row) {
+            row.classList.remove('unread');
+            row.classList.add('read');
+            const btn = row.querySelector('.mark-read-btn');
+            if(btn) btn.remove();
         }
-        $table_empty_message = "Aucune notification enregistrée.";
-        
-        include INC_PATH . 'table_component.php'; 
-        ?>
+    }
+}
+
+async function deleteNotif(id) {
+    if(!confirm('Supprimer cette notification ?')) return;
+    const formData = new FormData();
+    formData.append('csrf_token', CSRF_TOKEN);
+    formData.append('id', id);
+    
+    await fetch(URL_ROOT + 'api/notifications.php?action=delete', {
+        method: 'POST',
+        body: formData
+    });
+    
+    const row = document.getElementById(`page-notif-${id}`);
+    if(row) {
+        row.style.transform = 'translateX(50px)';
+        row.style.opacity = '0';
+        setTimeout(() => {
+            row.remove();
+            if (document.querySelectorAll('.notif-row').length === 0) {
+                location.reload(); // Show empty state
+            }
+        }, 300);
+    }
+}
+
+async function deleteAllNotifs() {
+    if(!confirm('Voulez-vous supprimer toutes vos notifications ?')) return;
+    const formData = new FormData();
+    formData.append('csrf_token', CSRF_TOKEN);
+    
+    await fetch(URL_ROOT + 'api/notifications.php?action=delete_all', {
+        method: 'POST',
+        body: formData
+    });
+    location.reload();
+}
+</script>
 
     </main>
 </div>

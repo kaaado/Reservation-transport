@@ -7,10 +7,45 @@ $database = new Database();
 $pdo = $database->getConnection();
 $user_id = $_SESSION['user_id'];
 
+// ═══════════════════════════════════════════════
+// AJAX STATUS CHECK — returns JSON for refresh button
+// ═══════════════════════════════════════════════
+if (isset($_GET['check_status']) && $_GET['check_status'] === '1') {
+    header('Content-Type: application/json');
+    $stmt = $pdo->prepare("SELECT status, id_is_verified FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($row && $row['status'] === 'active') {
+        // Determine redirect based on role
+        $role = $_SESSION['role'] ?? 'client';
+        $redirect = match($role) {
+            'admin' => URL_ROOT . 'admin/dashboard.php',
+            'transporter' => URL_ROOT . 'transporter/dashboard.php',
+            default => URL_ROOT . 'client/dashboard.php',
+        };
+        echo json_encode(['status' => 'active', 'verified' => (bool)$row['id_is_verified'], 'redirect' => $redirect]);
+    } else {
+        echo json_encode(['status' => $row['status'] ?? 'pending', 'verified' => (bool)($row['id_is_verified'] ?? false), 'redirect' => null]);
+    }
+    exit;
+}
+
 // Get ID info
-$stmt = $pdo->prepare("SELECT id_card_url, id_is_verified FROM users WHERE id = ?");
+$stmt = $pdo->prepare("SELECT id_card_url, id_is_verified, status FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $u = $stmt->fetch();
+
+// If user is already active, redirect them to their dashboard
+if ($u && $u['status'] === 'active') {
+    $role = $_SESSION['role'] ?? 'client';
+    $redirectUrl = match($role) {
+        'admin' => URL_ROOT . 'admin/dashboard.php',
+        'transporter' => URL_ROOT . 'transporter/dashboard.php',
+        default => URL_ROOT . 'client/dashboard.php',
+    };
+    header("Location: " . $redirectUrl);
+    exit;
+}
 
 $error = null;
 $success = null;
@@ -119,6 +154,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
             z-index: 10;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             animation: fadeInScale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow-y: auto;
+            max-height: 95vh;
         }
 
         @keyframes fadeInScale {
@@ -313,6 +350,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
             margin: 20px 0;
             border: 1px solid rgba(34, 197, 94, 0.3);
         }
+
+        /* ═══════════════════════════════════════════════
+           REFRESH STATUS BUTTON
+        ═══════════════════════════════════════════════ */
+        .btn-refresh {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            box-shadow: 0 8px 20px -5px rgba(59, 130, 246, 0.4);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-refresh:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px -5px rgba(59, 130, 246, 0.5);
+            filter: brightness(1.1);
+        }
+        .btn-refresh:active {
+            transform: translateY(0);
+        }
+        .btn-refresh.checking {
+            pointer-events: none;
+            opacity: 0.85;
+        }
+        .btn-refresh.checking i {
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .btn-refresh.approved {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+        .status-pending {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+        .status-approved {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            animation: fadeInScale 0.4s ease;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
     </style>
 </head>
 <body>
@@ -323,9 +436,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
 
     <div class="glass-card">
         <div class="icon-box">
-            <i class="fas fa-hourglass-half"></i>
+            <i class="fas fa-hourglass-half" id="statusIcon"></i>
         </div>
-        <h1>En attente d'approbation</h1>
+        <h1 id="statusTitle">En attente d'approbation</h1>
         
         <?php if ($error): ?>
             <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
@@ -334,13 +447,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
             <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
         <?php endif; ?>
 
-        <p>
+        <p id="statusDesc">
             Votre compte a été créé avec succès, mais il doit d'abord être validé par un administrateur avant que vous puissiez y accéder. 
             Veuillez patienter, nous traiterons votre demande dans les plus brefs délais.
         </p>
 
         <?php if (!empty($u['id_card_url'])): ?>
-            <div class="verified-badge">
+            <div class="verified-badge" id="idUploadedBadge">
                 <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px; display:block;"></i>
                 Votre pièce d'identité a été récéptionnée.<br>
                 <small>Veuillez attendre notre vérification.</small>
@@ -387,17 +500,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
                     errorBox.style.display = 'none';
                     
                     if (file) {
-                        // Validate size (5MB max)
                         if (file.size > 5 * 1024 * 1024) {
                             errorText.textContent = "Le fichier dépasse la taille maximale de 5Mo.";
                             errorBox.style.display = 'flex';
                             fileDetails.style.display = 'none';
                             btnSubmit.classList.remove('active');
-                            fileInput.value = ''; // Reset
+                            fileInput.value = '';
                             return;
                         }
 
-                        // Validate extension
                         const ext = file.name.split('.').pop().toLowerCase();
                         const allowed = ['jpg', 'jpeg', 'png', 'pdf'];
                         if (!allowed.includes(ext)) {
@@ -405,11 +516,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
                             errorBox.style.display = 'flex';
                             fileDetails.style.display = 'none';
                             btnSubmit.classList.remove('active');
-                            fileInput.value = ''; // Reset
+                            fileInput.value = '';
                             return;
                         }
 
-                        // Validation passed
                         fileNameDisplay.textContent = file.name;
                         fileDetails.style.display = 'flex';
                         btnSubmit.classList.add('active');
@@ -421,17 +531,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['id_card'])) {
             </script>
         <?php endif; ?>
 
-        <div style="margin-top: 30px;">
-            <a href="<?php echo URL_ROOT; ?>logout.php" class="btn-login" style="background: rgba(255,255,255,0.1); box-shadow: none;">
+        <!-- Action Buttons: Refresh + Logout -->
+        <div class="action-buttons">
+            <button type="button" class="btn-refresh" id="refreshBtn" onclick="checkStatus()">
+                <i class="fas fa-sync-alt" id="refreshIcon"></i> 
+                <span id="refreshText">Vérifier mon statut</span>
+            </button>
+            <a href="<?php echo URL_ROOT; ?>logout.php" class="btn-login" style="background: rgba(255,255,255,0.1); box-shadow: none; padding: 14px 28px; font-size: 15px;">
                 <i class="fas fa-sign-out-alt"></i> Se déconnecter
             </a>
         </div>
+
+        <!-- Status Indicator -->
+        <div id="statusResult" style="display:none; margin-top:15px;"></div>
 
         <div class="security-footer">
             <i class="fas fa-shield-alt"></i> Centre de sécurité CargoConnect
         </div>
     </div>
 </div>
+
+<script>
+let isChecking = false;
+
+function checkStatus() {
+    if (isChecking) return;
+    isChecking = true;
+
+    const btn = document.getElementById('refreshBtn');
+    const icon = document.getElementById('refreshIcon');
+    const text = document.getElementById('refreshText');
+    const result = document.getElementById('statusResult');
+    
+    // Set loading state
+    btn.classList.add('checking');
+    text.textContent = 'Vérification en cours...';
+
+    fetch('?check_status=1', { 
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        isChecking = false;
+        btn.classList.remove('checking');
+
+        if (data.status === 'active') {
+            // Account approved!
+            btn.classList.add('approved');
+            icon.className = 'fas fa-check-circle';
+            text.textContent = 'Compte approuvé !';
+
+            // Update the page visuals
+            document.getElementById('statusIcon').className = 'fas fa-check-circle';
+            document.getElementById('statusIcon').style.color = '#10b981';
+            document.getElementById('statusTitle').textContent = 'Compte approuvé !';
+            document.getElementById('statusDesc').textContent = 'Votre compte a été validé par un administrateur. Redirection en cours...';
+            
+            // Hide ID uploaded badge if present
+            const badge = document.getElementById('idUploadedBadge');
+            if (badge) badge.style.display = 'none';
+
+            result.innerHTML = '<div class="status-indicator status-approved"><i class="fas fa-check-circle"></i> Votre compte est maintenant actif — redirection...</div>';
+            result.style.display = 'block';
+
+            // Redirect after 2 seconds
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 2000);
+        } else {
+            // Still pending
+            text.textContent = 'Vérifier mon statut';
+            
+            let msg = '<div class="status-indicator status-pending"><i class="fas fa-clock"></i> ';
+            if (data.verified) {
+                msg += 'Identité vérifiée — en attente d\'activation du compte';
+            } else {
+                msg += 'Toujours en attente de vérification';
+            }
+            msg += '</div>';
+            result.innerHTML = msg;
+            result.style.display = 'block';
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                result.style.display = 'none';
+            }, 5000);
+        }
+    })
+    .catch(err => {
+        isChecking = false;
+        btn.classList.remove('checking');
+        text.textContent = 'Vérifier mon statut';
+        result.innerHTML = '<div class="status-indicator status-pending"><i class="fas fa-exclamation-triangle"></i> Erreur de connexion. Réessayez.</div>';
+        result.style.display = 'block';
+    });
+}
+</script>
 
 </body>
 </html>

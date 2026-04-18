@@ -3,12 +3,13 @@
 :root {
     --primary: #ff8c00;
     --primary-hover: #ff6b00;
-    --bg-dark: #0f172a;
-    --text-main: #f8fafc;
+    --bg-dark: #243347; /* Lifted from #1e293b for a cleaner look */
+    --bg-card: #2d3d54; /* Brighter Slate for elements */
+    --text-main: #f1f5f9; /* Higher contrast off-white */
     --text-muted: #94a3b8;
-    --glass-bg: rgba(15, 23, 42, 0.4);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    --glass-bg: rgba(45, 61, 84, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --glass-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
 }
 
 * {

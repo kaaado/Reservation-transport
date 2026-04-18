@@ -64,6 +64,7 @@ function loginUser($email, $password, $pdo, $remember = false) {
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['role'] = $user['role'];
     $_SESSION['name'] = $user['name'];
+    $_SESSION['has_accepted_contract'] = $user['has_accepted_contract'] ?? 0;
     $_SESSION['last_login'] = $user['last_login'] ?? date('Y-m-d H:i:s');
 
     // Record last login
@@ -102,6 +103,7 @@ function checkRememberMe($pdo) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['name'] = $user['name'];
+                $_SESSION['has_accepted_contract'] = $user['has_accepted_contract'] ?? 0;
                 return true;
             }
         }

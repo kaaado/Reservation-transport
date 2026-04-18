@@ -11,6 +11,10 @@ $db = new Database();
 $pdo = $db->getConnection();
 $transporter_id = $_SESSION['user_id'];
 
+// MIDDLEWARE: Force contract signature
+require_once INC_PATH . 'contract_middleware.php';
+checkTransporterContract($pdo);
+
 $month_earnings = calculateEarnings($transporter_id, $pdo);
 $total_earnings = calculateTotalEarnings($transporter_id, $pdo);
 $history = getEarningsHistory($transporter_id, $pdo);

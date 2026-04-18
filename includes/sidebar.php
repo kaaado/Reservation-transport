@@ -34,14 +34,19 @@ $dashPath = getRoleDashboardPath($role);
         <?php endif; ?>
         
         <?php if ($role === 'admin'): ?>
-            <li><a href="<?php echo URL_ROOT; ?>admin/users.php" <?php echo ($current_page == 'users.php') ? 'class="active"' : ''; ?>><i class="fas fa-users"></i> Utilisateurs</a></li>
-            <li><a href="<?php echo URL_ROOT; ?>admin/reservation_logs.php" <?php echo ($current_page == 'reservation_logs.php') ? 'class="active"' : ''; ?>><i class="fas fa-history"></i> Journaux d'Audit</a></li>
-            <li><a href="<?php echo URL_ROOT; ?>admin/reports.php" <?php echo ($current_page == 'reports.php') ? 'class="active"' : ''; ?>><i class="fas fa-chart-bar"></i> Rapports</a></li>
+            <li style="margin-top:10px;"><span style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:1px; padding:0 15px; font-weight:700;">Administration</span></li>
+            <li><a href="<?php echo URL_ROOT; ?>admin/users.php" <?php echo ($current_page == 'users.php') ? 'class="active"' : ''; ?>><i class="fas fa-users-cog"></i> Utilisateurs</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>admin/reservations.php" <?php echo (in_array($current_page, ['reservations.php']) && strpos($_SERVER['REQUEST_URI'], 'admin') !== false) ? 'class="active"' : ''; ?>><i class="fas fa-clipboard-list"></i> Réservations</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>admin/vehicles.php" <?php echo ($current_page == 'vehicles.php' && strpos($_SERVER['REQUEST_URI'], 'admin') !== false) ? 'class="active"' : ''; ?>><i class="fas fa-truck-moving"></i> Véhicules</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>admin/commissions.php" <?php echo ($current_page == 'commissions.php') ? 'class="active"' : ''; ?>><i class="fas fa-money-bill-wave"></i> Commissions</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>admin/reservation_logs.php" <?php echo ($current_page == 'reservation_logs.php') ? 'class="active"' : ''; ?>><i class="fas fa-history"></i> Audit Réservations</a></li>
+            <li><a href="<?php echo URL_ROOT; ?>admin/admin_audit_logs.php" <?php echo ($current_page == 'admin_audit_logs.php') ? 'class="active"' : ''; ?>><i class="fas fa-shield-alt"></i> Traçabilité Gouvernance</a></li>
         <?php endif; ?>
         
         <li><a href="<?php echo URL_ROOT; ?>account/notifications.php" <?php echo ($current_page == 'notifications.php') ? 'class="active"' : ''; ?>><i class="fas fa-bell"></i> Notifications</a></li>
         <li><a href="<?php echo URL_ROOT; ?>account/profile.php" <?php echo ($current_page == 'profile.php') ? 'class="active"' : ''; ?>><i class="fas fa-id-badge"></i> Mon Profil</a></li>
         <li><a href="<?php echo URL_ROOT; ?>account/settings.php" <?php echo ($current_page == 'settings.php') ? 'class="active"' : ''; ?>><i class="fas fa-cog"></i> Paramètres</a></li>
+        <li><a href="<?php echo URL_ROOT; ?>account/contract.php" <?php echo ($current_page == 'contract.php') ? 'class="active"' : ''; ?>><i class="fas fa-file-contract"></i> Contrat & Termes</a></li>
     </ul>
 
     <div class="user-profile">

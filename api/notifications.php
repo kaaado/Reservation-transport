@@ -66,5 +66,34 @@ if ($action === 'mark_read') {
     exit();
 }
 
+if ($action === 'delete') {
+    // CSRF Check
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid CSRF']);
+        exit();
+    }
+
+    $notif_id = $_POST['id'] ?? null;
+    if ($notif_id) {
+        $stmt = $pdo->prepare("DELETE FROM notifications WHERE user_id = ? AND id = ?");
+        $stmt->execute([$user_id, (int)$notif_id]);
+    }
+    echo json_encode(['success' => true]);
+    exit();
+}
+
+if ($action === 'delete_all') {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid CSRF']);
+        exit();
+    }
+    $stmt = $pdo->prepare("DELETE FROM notifications WHERE user_id = ?");
+    $stmt->execute([$user_id]);
+    echo json_encode(['success' => true]);
+    exit();
+}
+
 http_response_code(400);
 echo json_encode(['error' => 'Invalid Action']);
