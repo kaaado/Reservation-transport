@@ -3,9 +3,8 @@ require_once __DIR__ . '/../core/paths.php';
 require_once CONF_PATH . 'database.php';
 require_once FUNC_PATH . 'auth.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once INC_PATH . 'session_manager.php';
+safe_session_start();
 
 $database = new Database();
 $pdo = $database->getConnection();

@@ -1,7 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../includes/session_manager.php';
+safe_session_start();
 
 // 1. Force HTTPS and strict proxy headers
 header("Cache-Control: no-cache, no-store, must-revalidate");
