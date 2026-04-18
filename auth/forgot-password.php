@@ -21,19 +21,19 @@ $success = null;
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
     $database = new Database();
-    
+
     try {
         $pdo = $database->getConnection();
-        
+
         $stmt = $pdo->prepare("SELECT id, name FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if ($user) {
             // Generate token
             $token = bin2hex(random_bytes(32));
             $expiry = time() + 3600; // 1 hour
-            
+
             $cache_file = __DIR__ . '/../cache/password_resets.json';
             if (!file_exists(dirname($cache_file))) {
                 mkdir(dirname($cache_file), 0777, true);
@@ -43,12 +43,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 'user_id' => $user['id'],
                 'expiry' => $expiry
             ];
-            
+
             if (file_put_contents($cache_file, json_encode($tokens))) {
-                
+
                 $app_url = $_ENV['APP_URL'] ?? "http://" . $_SERVER['HTTP_HOST'] . "/Reservation-transport";
                 $reset_link = $app_url . "/auth/reset-password.php?token=" . $token;
-                
+
                 $subject = 'Réinitialisation de votre mot de passe - CargoConnect';
                 $body = "
                 <div style='background: #f8fafc; padding: 40px; border-radius: 12px; color: #0f172a; margin-top: 30px; font-family: sans-serif;'>
@@ -74,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 try {
                     enqueueEmail($email, $user['name'], $subject, $body);
                     $success = "Un lien de réinitialisation a été ajouté à la file d'attente. Vous devriez le recevoir très bientôt.";
-                } catch(Exception $e) {
+                } catch (Exception $e) {
                     $error = "Erreur lors de l'ajout à la file d'attente.";
                 }
             } else {
@@ -95,11 +95,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <div class="auth-wrapper">
     <div class="auth-card" style="max-width: 500px; flex-direction: column; text-align: center; padding: 40px;">
-        
+
         <div style="font-size: 40px; color: #ff8c00; margin-bottom: 20px;">
             <i class="fas fa-key"></i>
         </div>
-        
+
         <h2 style="font-size: 24px; color: white; margin-bottom: 10px;">Mot de passe oublié ?</h2>
         <p style="color: #cbd5e1; font-size: 14px; margin-bottom: 30px;">
             Entrez votre adresse email et nous vous enverrons des instructions pour réinitialiser votre mot de passe.
@@ -111,13 +111,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <span><?php echo htmlspecialchars($error); ?></span>
             </div>
         <?php endif; ?>
-        
+
         <?php if ($success): ?>
-            <div class="alert alert-success" style="text-align: left; background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); color: #22c55e;">
+            <div class="alert alert-success"
+                style="text-align: left; background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); color: #22c55e;">
                 <i class="fas fa-check-circle"></i>
                 <span><?php echo htmlspecialchars($success); ?></span>
             </div>
-            
+
         <?php else: ?>
 
             <form method="POST" action="" style="text-align: left;">
@@ -125,18 +126,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <input type="email" name="email" class="form-control" placeholder="Entrez votre adresse email" required>
                     <i class="fas fa-envelope icon-left"></i>
                 </div>
-                
+
                 <button type="submit" class="btn-primary" style="width: 100%;">
                     Envoyer le lien de récupération <i class="fas fa-paper-plane" style="margin-left: 10px;"></i>
                 </button>
             </form>
-            
+
         <?php endif; ?>
-        
-        <div class="auth-footer" style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
-            Rappelez-vous de votre mot de passe ? <a href="<?php echo URL_ROOT; ?>auth/login.php" >Retour connexion</a>
+
+        <div class="auth-footer"
+            style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+            Rappelez-vous de votre mot de passe ? <a href="<?php echo URL_ROOT; ?>auth/login.php">Retour connexion</a>
         </div>
-        
+
     </div>
 </div>
 
