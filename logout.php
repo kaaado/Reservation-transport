@@ -2,9 +2,8 @@
 require_once __DIR__ . '/core/paths.php';
 require_once CONF_PATH . 'database.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/includes/session_manager.php';
+safe_session_start();
 
 // 1. Clear database token if user was remembered
 if (isset($_SESSION['user_id'])) {

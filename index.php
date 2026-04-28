@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_manager.php';
+safe_session_start();
 // Redirect based on session
 if (isset($_SESSION['user_id'])) {
     if ($_SESSION['role'] === 'client') {

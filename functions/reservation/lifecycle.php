@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/validation.php';
+require_once __DIR__ . '/../admin/notifications.php';
 
 function logReservationChange($reservation_id, $old, $new, $user_id, $pdo) {
     if ($old === $new && $old !== null) return; // Idempotency check 

@@ -1,8 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/paths.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../includes/session_manager.php';
+safe_session_start();
 ?>
 <!DOCTYPE html>
 <html lang="fr">

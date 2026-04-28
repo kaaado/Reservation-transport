@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../core/paths.php';
-session_start();
+require_once __DIR__ . '/../includes/session_manager.php';
+safe_session_start();
 require_once CONF_PATH . 'database.php';
 require_once FUNC_PATH . 'auth.php';
 

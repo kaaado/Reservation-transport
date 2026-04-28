@@ -1,7 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/session_manager.php';
+safe_session_start();
 $role = $_SESSION['role'] ?? 'guest';
 $current_page = basename($_SERVER['PHP_SELF']);
 
