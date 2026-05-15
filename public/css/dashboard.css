@@ -25,7 +25,7 @@ body {
 
 /* Sidebar */
 .sidebar {
-    width: 280px;
+    width: 300px;
     background: #2d3d54; 
     background: linear-gradient(180deg, #2d3d54 0%, #243347 100%);
     backdrop-filter: blur(30px);
@@ -45,15 +45,50 @@ body {
 }
 
 .sidebar .logo {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 700;
     color: #ff8c00;
     text-decoration: none;
     margin-bottom: 40px;
-    display: block;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
 }
 .sidebar .logo span { color: white; }
+
+/* Sidebar Logo Circle */
+.sidebar-logo-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px;
+    min-height: 42px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(255, 140, 0, 0.35);
+    box-shadow: 0 0 15px rgba(255, 140, 0, 0.12);
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.sidebar .logo:hover .sidebar-logo-circle {
+    border-color: #ff8c00;
+    box-shadow: 0 0 20px rgba(255, 140, 0, 0.25);
+}
+
+.sidebar-logo-circle img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 42px;
+    max-height: 42px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
 
 .nav-menu {
     list-style: none;
@@ -118,8 +153,8 @@ body {
 .main-content {
     flex: 1;
     padding: 110px 40px 40px 40px; /* Offset for fixed topbar */
-    margin-left: 280px; /* Offset for fixed sidebar */
-    width: calc(100% - 280px); /* Strict width bounds to prevent overflow */
+    margin-left: 300px; /* Offset for fixed sidebar */
+    width: calc(100% - 300px); /* Strict width bounds to prevent overflow */
     overflow-y: auto;
     position: relative;
     z-index: 10;
@@ -129,8 +164,8 @@ body {
 .topbar {
     position: fixed;
     top: 0;
-    left: 280px; 
-    width: calc(100% - 280px);
+    left: 300px; 
+    width: calc(100% - 300px);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -682,7 +717,7 @@ h1, h2, h3, h4, .stat-details .num {
 @media (max-width: 991px) {
     .sidebar {
         transform: translateX(-100%);
-        width: 280px; /* Ensure fixed width on mobile overlay */
+        width: 300px; /* Ensure fixed width on mobile overlay */
     }
     .sidebar.active {
         transform: translateX(0);

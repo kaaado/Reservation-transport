@@ -29,10 +29,11 @@ if ($role === 'transporter') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contrat de Partenariat - CargoConnect</title>
+    <link rel="icon" type="image/jpeg" href="<?php echo ASSETS_URL; ?>logo.jpg">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?php echo CSS_URL; ?>style.css">
-    <link rel="stylesheet" href="<?php echo CSS_URL; ?>dashboard.css">
+    <link rel="stylesheet" href="<?php echo CSS_URL; ?>style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="<?php echo CSS_URL; ?>dashboard.css?v=<?php echo time(); ?>">
 </head>
 <body>
     <div class="dashboard-layout">
@@ -92,6 +93,22 @@ if ($role === 'transporter') {
                             Négociation & Transparence
                         </h3>
                         <p>Le transporteur est libre de proposer ses propres tarifs sur les demandes "Négociables". Toutes les transactions et modifications de statuts de mission doivent être effectuées via la plateforme pour garantir la traçabilité.</p>
+                    </section>
+
+                    <section style="margin-bottom: 40px;">
+                        <h3 style="color: #fff; margin-bottom: 15px; display: flex; align-items: center; gap: 15px;">
+                            <span style="width: 32px; height: 32px; background: rgba(255,140,0,0.2); color: #ff8c00; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">05</span>
+                            Responsabilité des Marchandises
+                        </h3>
+                        <p>Le transporteur est l'unique responsable de la protection et de l'intégrité des marchandises transportées. En cas de dommage, perte ou vol des produits du client, la responsabilité incombe entièrement au transporteur et non à la plateforme CargoConnect.</p>
+                    </section>
+
+                    <section style="margin-bottom: 40px;">
+                        <h3 style="color: #fff; margin-bottom: 15px; display: flex; align-items: center; gap: 15px;">
+                            <span style="width: 32px; height: 32px; background: rgba(255,140,0,0.2); color: #ff8c00; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">06</span>
+                            Vérification des Véhicules
+                        </h3>
+                        <p>Tout véhicule ajouté au compte pour effectuer des transports doit faire l'objet d'une vérification réelle de son état et de sa conformité. Les missions ne peuvent être effectuées qu'avec des véhicules validés par l'administration.</p>
                     </section>
 
                     <div style="background: rgba(255,140,0,0.05); padding: 25px; border-radius: 12px; border: 1px solid rgba(255,140,0,0.2); text-align: center; margin-top: 50px;">

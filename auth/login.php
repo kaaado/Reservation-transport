@@ -71,7 +71,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="auth-card">
         <!-- Left Side: Branding -->
         <div class="auth-left">
-            <a href="<?php echo URL_ROOT; ?>auth/login.php" class="brand-logo">Cargo<span>Connect</span></a>
+            <a href="<?php echo URL_ROOT; ?>auth/login.php" class="brand-logo">
+                <div class="auth-logo-circle">
+                    <img src="<?php echo ASSETS_URL; ?>logo.jpg" alt="CargoConnect Logo" loading="lazy">
+                </div>
+                <div>Cargo<span>Connect</span></div>
+            </a>
             <h1 class="brand-tagline">La nouvelle référence du transport de marchandises.</h1>
             <p class="brand-desc">Gérez vos expéditions, connectez avec des transporteurs fiables et suivez vos
                 opérations en temps réel dans une interface repensée pour vous.</p>

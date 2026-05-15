@@ -138,7 +138,9 @@ body {
     text-decoration: none;
     letter-spacing: -0.5px;
     margin-bottom: 20px;
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 .brand-logo span {
@@ -502,4 +504,275 @@ button.loading,
     .auth-left, .auth-right { padding: 30px 20px; }
     .brand-tagline { font-size: 22px; }
     .btn-back { display: none; }
+}
+
+/* ===== Auth Page Circle Logo ===== */
+.auth-logo-circle {
+    width: 65px !important;
+    height: 65px !important;
+    min-width: 65px;
+    min-height: 65px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(255, 140, 0, 0.4);
+    box-shadow: 0 0 25px rgba(255, 140, 0, 0.15), 0 4px 15px rgba(0,0,0,0.2);
+    margin-bottom: 0;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-logo-circle:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 35px rgba(255, 140, 0, 0.3), 0 4px 20px rgba(0,0,0,0.3);
+    transform: scale(1.05);
+}
+
+.auth-logo-circle img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 65px;
+    max-height: 65px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .auth-logo-circle {
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* ===== Terms Checkbox Group ===== */
+.terms-group {
+    margin-bottom: 15px !important;
+}
+
+.terms-checkbox {
+    font-size: 14px;
+}
+
+.terms-link {
+    color: var(--primary) !important;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px dashed var(--primary);
+    transition: all 0.3s;
+}
+
+.terms-link:hover {
+    color: #ffb84d !important;
+    border-color: #ffb84d;
+}
+
+/* ===== Disabled Button State ===== */
+.btn-primary:disabled,
+.btn-primary[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.btn-primary:disabled:hover {
+    background: var(--primary);
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ===== Terms Modal ===== */
+.terms-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(12px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.terms-modal-overlay.active {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.terms-modal {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+    animation: modalUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+@keyframes modalUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.terms-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 30px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.terms-modal-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.terms-modal-header h3 i {
+    color: var(--primary);
+    font-size: 22px;
+}
+
+.terms-modal-close {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.terms-modal-close:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+    color: #cbd5e1;
+    line-height: 1.8;
+    font-size: 15px;
+}
+
+.contract-section {
+    margin-bottom: 28px;
+}
+
+.contract-section h4 {
+    color: var(--text-main);
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-num {
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 140, 0, 0.15);
+    color: var(--primary);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.contract-section p {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.contract-notice {
+    background: rgba(255, 140, 0, 0.06);
+    border: 1px solid rgba(255, 140, 0, 0.15);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.contract-notice p {
+    margin: 0;
+    font-size: 13px;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.contract-notice i {
+    color: var(--primary);
+    margin-right: 8px;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.15);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-terms-accept {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s;
+    font-family: 'Outfit', sans-serif;
+}
+
+.btn-terms-accept:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 140, 0, 0.3);
+}
+
+@media (max-width: 480px) {
+    .terms-modal {
+        max-height: 95vh;
+        border-radius: 16px;
+    }
+    .terms-modal-header { padding: 18px 20px; }
+    .terms-modal-body { padding: 20px; }
+    .terms-modal-footer { padding: 15px 20px; }
 }
